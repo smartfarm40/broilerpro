@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="BroilerTrack" />
   <title>BroilerTrack - Laporan Harian Ayam Broiler</title>
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet" />
@@ -1362,100 +1363,148 @@
   <!-- ===== MODAL: Buat / Edit Target ===== -->
   <div id="modal-target" class="modal hidden">
     <div class="modal-content modal-content-lg">
+
+      <!-- Header dengan icon -->
       <div class="modal-header">
-        <h3 class="title-large bold" id="modal-target-title">Buat Target Baru</h3>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <span class="material-icons-round" style="color:var(--primary);font-size:20px">flag</span>
+          </div>
+          <div>
+            <h3 class="title-large bold" id="modal-target-title" style="font-size:15px">Buat Target Baru</h3>
+            <p style="font-size:11px;color:var(--secondary-text);margin:0">Target pakan, berat, atau FCR</p>
+          </div>
+        </div>
         <button class="icon-btn-ghost" onclick="closeModal('modal-target')">
           <span class="material-icons-round">close</span>
         </button>
       </div>
+
       <div class="modal-body">
         <input type="hidden" id="target-edit-id" />
 
-        <!-- Nama Target -->
-        <div class="auth-field">
-          <label class="auth-label">Nama Target <span style="color:var(--hint);font-weight:400">(opsional)</span></label>
-          <input type="text" id="target-nama" class="form-input full" placeholder="cth: Target Batch #402 Kandang A" />
-        </div>
-
-        <!-- Kandang -->
-        <div class="auth-field">
-          <label class="auth-label">Kandang <span style="color:var(--error)">*</span></label>
-          <select id="target-kandang" class="form-select full" onchange="onTargetKandangChange()">
-            <option value="">Pilih kandang...</option>
-          </select>
-        </div>
-
-        <!-- Tipe Target -->
-        <div class="auth-field">
-          <label class="auth-label">Tipe Target <span style="color:var(--error)">*</span></label>
-          <div class="target-type-group">
-            <button class="target-type-btn active" data-type="pakan" onclick="selectTargetType('pakan', this)">
-              <span class="material-icons-round">grain</span>
-              <span>Pakan</span>
-              <small>g/ekor/hari</small>
-            </button>
-            <button class="target-type-btn" data-type="berat" onclick="selectTargetType('berat', this)">
-              <span class="material-icons-round">monitor_weight</span>
-              <span>Berat</span>
-              <small>gram</small>
-            </button>
-            <button class="target-type-btn" data-type="fcr" onclick="selectTargetType('fcr', this)">
-              <span class="material-icons-round">analytics</span>
-              <span>FCR</span>
-              <small>rasio</small>
-            </button>
+        <!-- ── SECTION 1: Identitas ── -->
+        <div class="prog-section">
+          <div class="prog-section-title">
+            <span class="material-icons-round">info</span>
+            Identitas Target
+          </div>
+          <div class="prog-section-body">
+            <div class="auth-field">
+              <label class="auth-label">Nama Target <span style="color:var(--hint);font-weight:400">(opsional)</span></label>
+              <input type="text" id="target-nama" class="form-input full"
+                     placeholder="cth: Target Batch #402 Kandang A" />
+            </div>
+            <div class="form-row-2">
+              <div class="auth-field">
+                <label class="auth-label">Kandang <span style="color:var(--error)">*</span></label>
+                <select id="target-kandang" class="form-select full" onchange="onTargetKandangChange()">
+                  <option value="">Pilih kandang...</option>
+                </select>
+              </div>
+              <div class="auth-field">
+                <label class="auth-label">Breed / Strain</label>
+                <select id="target-breed" class="form-select full" onchange="onBreedChange()">
+                  <option value="Cobb 500">Cobb 500</option>
+                  <option value="Ross 308">Ross 308</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Breed -->
-        <div class="auth-field">
-          <label class="auth-label">Breed / Strain</label>
-          <select id="target-breed" class="form-select full" onchange="onBreedChange()">
-            <option value="Cobb 500">Cobb 500</option>
-            <option value="Ross 308">Ross 308</option>
-            <option value="custom">Custom (isi manual)</option>
-          </select>
-        </div>
-
-        <!-- Periode -->
-        <div class="form-row-2">
-          <div class="auth-field">
-            <label class="auth-label">Tanggal Mulai <span style="color:var(--error)">*</span></label>
-            <input type="date" id="target-periode-mulai" class="form-input full" onchange="onPeriodeChange()" />
+        <!-- ── SECTION 2: Tipe Target ── -->
+        <div class="prog-section">
+          <div class="prog-section-title">
+            <span class="material-icons-round">category</span>
+            Tipe Target <span style="color:var(--error);margin-left:2px">*</span>
           </div>
-          <div class="auth-field">
-            <label class="auth-label">Tanggal Selesai <span style="color:var(--error)">*</span></label>
-            <input type="date" id="target-periode-selesai" class="form-input full" onchange="onPeriodeChange()" />
+          <div class="prog-section-body">
+            <div class="target-type-group">
+              <button class="target-type-btn active" data-type="pakan" onclick="selectTargetType('pakan', this)">
+                <span class="material-icons-round">grain</span>
+                <div>
+                  <span>Pakan</span>
+                  <small>g/ekor/hari</small>
+                </div>
+              </button>
+              <button class="target-type-btn" data-type="berat" onclick="selectTargetType('berat', this)">
+                <span class="material-icons-round">monitor_weight</span>
+                <div>
+                  <span>Berat</span>
+                  <small>gram</small>
+                </div>
+              </button>
+              <button class="target-type-btn" data-type="fcr" onclick="selectTargetType('fcr', this)">
+                <span class="material-icons-round">analytics</span>
+                <div>
+                  <span>FCR</span>
+                  <small>rasio</small>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Hari Mulai -->
-        <div class="auth-field">
-          <label class="auth-label">Mulai dari Hari ke-</label>
-          <input type="number" id="target-hari-mulai" class="form-input full" value="1" min="1" max="60" onchange="onPeriodeChange()" />
-          <p class="form-hint">Hari ke-berapa ayam saat periode ini dimulai</p>
+        <!-- ── SECTION 3: Periode ── -->
+        <div class="prog-section">
+          <div class="prog-section-title">
+            <span class="material-icons-round">date_range</span>
+            Periode
+          </div>
+          <div class="prog-section-body">
+            <div class="form-row-2">
+              <div class="auth-field">
+                <label class="auth-label">Tanggal Mulai <span style="color:var(--error)">*</span></label>
+                <input type="date" id="target-periode-mulai" class="form-input full" onchange="onPeriodeChange()" />
+              </div>
+              <div class="auth-field">
+                <label class="auth-label">Tanggal Selesai <span style="color:var(--error)">*</span></label>
+                <input type="date" id="target-periode-selesai" class="form-input full" onchange="onPeriodeChange()" />
+              </div>
+            </div>
+            <div class="auth-field">
+              <label class="auth-label">Ayam mulai dari Hari ke-</label>
+              <div style="display:flex;align-items:center;gap:10px">
+                <input type="number" id="target-hari-mulai" class="form-input"
+                       style="width:80px;text-align:center;font-size:16px;font-weight:700"
+                       value="1" min="1" max="60" onchange="onPeriodeChange()" />
+                <span style="font-size:13px;color:var(--secondary-text)">saat periode ini dimulai</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Preview / Bulk Edit -->
-        <div class="auth-field" id="target-values-section">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <label class="auth-label" style="margin:0">Nilai Target per Hari</label>
-            <button class="btn-link-sm" onclick="fillFromTemplate()">
-              <span class="material-icons-round" style="font-size:14px">auto_fix_high</span>
+        <!-- ── SECTION 4: Nilai Target ── -->
+        <div class="prog-section" id="target-values-section">
+          <div class="prog-section-title" style="justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="material-icons-round">table_chart</span>
+              Nilai Target per Hari
+            </div>
+            <button class="btn-link-sm" onclick="fillFromTemplate()" style="font-size:11px">
+              <span class="material-icons-round" style="font-size:13px">auto_fix_high</span>
               Isi dari Template
             </button>
           </div>
-          <div id="target-values-grid" class="target-values-grid">
-            <p style="color:var(--hint);font-size:13px">Pilih kandang, tipe, dan periode terlebih dahulu</p>
+          <div class="prog-section-body">
+            <div id="target-values-grid" class="target-values-grid">
+              <p style="color:var(--hint);font-size:13px;text-align:center;padding:8px 0">
+                Isi kandang, tipe, dan periode terlebih dahulu
+              </p>
+            </div>
           </div>
         </div>
 
-        <!-- Catatan -->
+        <!-- ── Catatan ── -->
         <div class="auth-field">
-          <label class="auth-label">Catatan</label>
-          <textarea id="target-catatan" class="form-textarea full" rows="2" placeholder="Catatan tambahan..."></textarea>
+          <label class="auth-label">Catatan <span style="color:var(--hint);font-weight:400">(opsional)</span></label>
+          <textarea id="target-catatan" class="form-textarea full" rows="2"
+                    placeholder="Catatan tambahan..."></textarea>
         </div>
       </div>
+
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeModal('modal-target')">Batal</button>
         <button class="btn btn-primary" onclick="saveTarget()">

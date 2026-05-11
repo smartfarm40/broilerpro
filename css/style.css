@@ -1394,20 +1394,22 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
 }
 .target-type-btn {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 14px 8px;
   border: 2px solid var(--outline-variant);
   border-radius: 12px;
   background: var(--surface);
   cursor: pointer;
   transition: all 0.15s;
   color: var(--secondary-text);
+  text-align: center;
 }
-.target-type-btn .material-icons-round { font-size: 18px; flex-shrink: 0; }
-.target-type-btn span:nth-child(2) { font-size: 13px; font-weight: 600; }
-.target-type-btn small { font-size: 10px; color: var(--hint); display: block; }
+.target-type-btn .material-icons-round { font-size: 24px; }
+.target-type-btn span:nth-child(2) { font-size: 13px; font-weight: 700; }
+.target-type-btn div { display: flex; flex-direction: column; gap: 2px; }
+.target-type-btn small { font-size: 10px; color: var(--hint); }
 .target-type-btn.active {
   border-color: var(--primary);
   background: rgba(59,130,246,.08);

@@ -13,8 +13,7 @@ const TSVisits = {
         .from('ts_visits')
         .select(`
           *,
-          kandang:kandangs(id, name, kapasitas, usia, breed),
-          ts_user:profiles!ts_visits_ts_user_id_fkey(id, nama)
+          kandang:kandangs(id, name, kapasitas, usia, breed)
         `)
         .order('tanggal_kunjungan', { ascending: true });
 
@@ -44,8 +43,7 @@ const TSVisits = {
         .from('ts_visits')
         .select(`
           *,
-          kandang:kandangs(id, name, kapasitas, usia, breed),
-          ts_user:profiles!ts_visits_ts_user_id_fkey(id, nama)
+          kandang:kandangs(id, name, kapasitas, usia, breed)
         `)
         .eq('id', visitId)
         .single();
