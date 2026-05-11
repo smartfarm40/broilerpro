@@ -431,9 +431,22 @@ function renderDaily() {
   const day = getCurrentDay();
   const el = document.getElementById('daily-day-title');
   if (el) el.textContent = 'Hari ' + day;
+  const subtitleEl = document.getElementById('daily-page-subtitle');
+  if (subtitleEl) subtitleEl.textContent = 'BroilerTrack Laporan Harian';
   const lbl = document.getElementById('btn-complete-label');
   if (lbl) lbl.textContent = 'Hari ' + day;
   renderDayProgressNodes();
+
+  // Operator: tampilkan target banner + jadwal obat
+  if (role === 'operator') {
+    _loadOperatorTargetBanner();
+    _loadOperatorMedBanner();
+  } else {
+    // Sembunyikan banner untuk non-operator
+    const banner = document.getElementById('operator-target-banner');
+    if (banner) banner.classList.add('hidden');
+  }
+
   const log = getTodayLog();
   if (log) {
     if (log.mortality !== null) document.getElementById('input-mortality').value = log.mortality;
@@ -4010,3 +4023,214 @@ function _buildTSLogCard(l) {
       ${l.catatan ? `<div style="margin-top:8px;font-size:12px;color:var(--secondary-text);padding:6px 8px;background:var(--surface-variant);border-radius:6px">${l.catatan}</div>` : ''}
     </div>`;
 }
+
+// ============================================================
+// ===== OPERATOR TARGET BANNER =====
+// Tampilkan target pakan & berat hari ini dari TS
+// ============================================================
+
+async function _loadOperatorTargetBanner() {
+  const banner = document.getElementById('operator-target-banner');
+  const rowEl  = document.getElementById('op-target-row');
+  const nameEl = document.getElementById('op-target-kandang-name');
+  if (!banner || !rowEl) return;
+
+  // Ambil kandang operator dari profile
+  const kandangId = AUTH.kandangId;
+  if (!kandangId) {
+    banner.classList.add('hidden');
+    return;
+  }
+
+  // Tampilkan nama kandang
+  const flock = DB.flocks.find(f => (f._dbId || f.id) === kandangId);
+  if (nameEl && flock) nameEl.textContent = flock.name || flock.nama || kandangId;
+
+  // Ambil hari ke- saat ini
+  const day = getCurrentDay();
+  const today = new Date().toISOString().split('T')[0];
+
+  try {
+    // Query target pakan & berat untuk hari ini
+    const [targetPakan, targetBerat] = await Promise.all([
+      PeriodTargets.getForDay(kandangId, 'pakan', today),
+      PeriodTargets.getForDay(kandangId, 'berat', today)
+    ]);
+
+    // Ambil nilai aktual dari log hari ini
+    const log = getTodayLog();
+    const aktualPakan = log ? ((log.feed_am || 0) + (log.feed_pm || 0)) : null;
+    const aktualBerat = log?.weight || null;
+
+    const items = [];
+
+    // Item target pakan
+    if (targetPakan?.nilai_target) {
+      const target = parseFloat(targetPakan.nilai_target);
+      // Konversi g/ekor ke kg total (target dalam g/ekor, input dalam kg)
+      const flock = DB.flocks.find(f => f.active);
+      const pop   = flock ? (flock.current_qty || flock.qty || 1000) : 1000;
+      const targetKg = Math.round(target * pop / 1000 * 10) / 10;
+
+      let status = 'no-input';
+      let aktualText = 'Belum diisi';
+      if (aktualPakan !== null && aktualPakan > 0) {
+        const pct = aktualPakan / targetKg * 100;
+        status = pct >= 90 ? 'on-track' : 'off-track';
+        aktualText = aktualPakan.toFixed(1) + ' kg';
+      }
+
+      items.push({
+        type: 'pakan', icon: 'grain', color: '#F59E0B',
+        label: 'Target Pakan',
+        value: targetKg, unit: 'kg/hari',
+        aktual: aktualText, status,
+        hint: target + ' g/ekor'
+      });
+    }
+
+    // Item target berat
+    if (targetBerat?.nilai_target) {
+      const target = parseFloat(targetBerat.nilai_target);
+      let status = 'no-input';
+      let aktualText = 'Belum ditimbang';
+      if (aktualBerat) {
+        const dev = Math.abs(aktualBerat - target) / target * 100;
+        status = dev <= 10 ? 'on-track' : 'off-track';
+        aktualText = aktualBerat + ' g';
+      }
+
+      items.push({
+        type: 'berat', icon: 'monitor_weight', color: '#10B981',
+        label: 'Target Berat',
+        value: target, unit: 'gram',
+        aktual: aktualText, status,
+        hint: 'H-' + (targetBerat.hari_ke || day)
+      });
+    }
+
+    // Fallback ke standar breed jika tidak ada target custom
+    if (items.length === 0) {
+      const breed = getActiveBreed();
+      const stdPakan = getTargetFeed(day, breed);
+      const stdBerat = getTargetWeight(day, breed);
+
+      if (stdPakan) items.push({
+        type: 'pakan', icon: 'grain', color: '#F59E0B',
+        label: 'Std Pakan', value: stdPakan, unit: 'kg/hari',
+        aktual: aktualPakan ? aktualPakan.toFixed(1) + ' kg' : 'Belum diisi',
+        status: aktualPakan ? (aktualPakan >= stdPakan * 0.9 ? 'on-track' : 'off-track') : 'no-input',
+        hint: 'Standar ' + breed
+      });
+
+      if (stdBerat) items.push({
+        type: 'berat', icon: 'monitor_weight', color: '#10B981',
+        label: 'Std Berat', value: stdBerat, unit: 'gram',
+        aktual: aktualBerat ? aktualBerat + ' g' : 'Belum ditimbang',
+        status: aktualBerat ? (Math.abs(aktualBerat - stdBerat) / stdBerat <= 0.1 ? 'on-track' : 'off-track') : 'no-input',
+        hint: 'Standar ' + breed
+      });
+    }
+
+    if (items.length === 0) {
+      banner.classList.add('hidden');
+      return;
+    }
+
+    // Render items
+    rowEl.innerHTML = items.map(item => `
+      <div class="op-target-item ${item.status}">
+        <div class="op-target-type">
+          <span class="material-icons-round" style="color:${item.color}">${item.icon}</span>
+          ${item.label}
+        </div>
+        <div class="op-target-value">${item.value}</div>
+        <div class="op-target-unit">${item.unit} &bull; ${item.hint}</div>
+        <div class="op-target-actual ${item.status}">
+          <span class="material-icons-round">
+            ${item.status === 'on-track' ? 'check_circle' : item.status === 'off-track' ? 'warning' : 'radio_button_unchecked'}
+          </span>
+          ${item.aktual}
+        </div>
+      </div>`).join('');
+
+    banner.classList.remove('hidden');
+
+  } catch (e) {
+    console.warn('[Operator] loadTargetBanner error:', e.message);
+    banner.classList.add('hidden');
+  }
+}
+
+// Jadwal obat hari ini untuk operator
+async function _loadOperatorMedBanner() {
+  // Cek apakah sudah ada banner, jika belum buat
+  let medBanner = document.getElementById('operator-med-banner');
+
+  const kandangId = AUTH.kandangId;
+  if (!kandangId) return;
+
+  try {
+    const schedule = await Medication.getTodaySchedule(kandangId);
+    if (!schedule.length) {
+      if (medBanner) medBanner.remove();
+      return;
+    }
+
+    // Buat banner jika belum ada
+    if (!medBanner) {
+      medBanner = document.createElement('div');
+      medBanner.id = 'operator-med-banner';
+      medBanner.className = 'op-med-banner';
+
+      // Insert setelah target banner
+      const targetBanner = document.getElementById('operator-target-banner');
+      if (targetBanner && targetBanner.parentNode) {
+        targetBanner.parentNode.insertBefore(medBanner, targetBanner.nextSibling);
+      }
+    }
+
+    medBanner.innerHTML = `
+      <div class="op-med-header">
+        <span class="material-icons-round">vaccines</span>
+        Jadwal Obat/Vaksin Hari Ini
+      </div>
+      <div class="op-med-list">
+        ${schedule.map(s => {
+          const info = Medication.getTypeInfo(s.medication_type);
+          const isDone = s.log_status === 'completed' || s.log_status === 'skipped';
+          return `
+            <div class="op-med-item">
+              <span class="material-icons-round" style="color:${info.color}">${info.icon}</span>
+              <div style="flex:1;min-width:0">
+                <div class="op-med-item-name">${s.nama_produk}</div>
+                <div class="op-med-item-dose">
+                  ${s.dosis ? s.dosis + ' ' + (s.satuan || '') + ' &bull; ' : ''}
+                  ${s.cara_pemberian || ''} &bull; H-${s.hari_ke}
+                </div>
+              </div>
+              ${isDone
+                ? `<span class="op-med-item-status done">✓ Selesai</span>`
+                : `<button class="op-med-item-status pending" style="border:none;cursor:pointer"
+                     onclick="openGiveMedModal('${s.item_id}','${kandangId}',${s.hari_ke},'${s.nama_produk}','${s.satuan||''}',${s.dosis||0})">
+                     Catat
+                   </button>`
+              }
+            </div>`;
+        }).join('')}
+      </div>`;
+
+  } catch (e) {
+    console.warn('[Operator] loadMedBanner error:', e.message);
+  }
+}
+
+// Re-load target banner saat input pakan berubah (real-time feedback)
+const _origCalcFeedTotal = calcFeedTotal;
+calcFeedTotal = function() {
+  _origCalcFeedTotal();
+  if (AUTH.role === 'operator') {
+    clearTimeout(window._targetBannerTimer);
+    window._targetBannerTimer = setTimeout(_loadOperatorTargetBanner, 600);
+  }
+};

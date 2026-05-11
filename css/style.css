@@ -2426,3 +2426,126 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
 .settings-row[style*="pointer-events:none"] .material-icons-round.secondary-text {
   display: none;
 }
+
+/* ===== OPERATOR TARGET BANNER ===== */
+
+.op-target-banner {
+  background: linear-gradient(135deg, rgba(59,130,246,.1), rgba(16,185,129,.08));
+  border-bottom: 1px solid rgba(59,130,246,.2);
+  padding: 10px 16px 12px;
+}
+.op-target-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.op-target-header .material-icons-round { font-size: 15px; }
+
+.op-target-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.op-target-row::-webkit-scrollbar { display: none; }
+
+.op-target-item {
+  flex: 1;
+  min-width: 100px;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--outline-variant);
+  position: relative;
+  overflow: hidden;
+}
+.op-target-item.on-track  { border-color: #10B981; }
+.op-target-item.off-track { border-color: #EF4444; }
+.op-target-item.no-input  { border-color: var(--outline-variant); }
+
+.op-target-type {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--secondary-text);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.op-target-type .material-icons-round { font-size: 12px; }
+
+.op-target-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--on-surface);
+  line-height: 1;
+}
+.op-target-unit {
+  font-size: 10px;
+  color: var(--secondary-text);
+  margin-top: 2px;
+}
+
+.op-target-actual {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+.op-target-actual.on-track  { background: rgba(16,185,129,.12); color: #059669; }
+.op-target-actual.off-track { background: rgba(239,68,68,.12);  color: #DC2626; }
+.op-target-actual.no-input  { background: var(--surface-variant); color: var(--hint); }
+.op-target-actual .material-icons-round { font-size: 12px; }
+
+/* Jadwal obat hari ini di form operator */
+.op-med-banner {
+  background: rgba(139,92,246,.06);
+  border-bottom: 1px solid rgba(139,92,246,.15);
+  padding: 10px 16px;
+}
+.op-med-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8B5CF6;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.op-med-header .material-icons-round { font-size: 15px; }
+.op-med-list { display: flex; flex-direction: column; gap: 6px; }
+.op-med-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(139,92,246,.15);
+}
+.op-med-item .material-icons-round { font-size: 16px; color: #8B5CF6; }
+.op-med-item-name { font-size: 13px; font-weight: 600; flex: 1; }
+.op-med-item-dose { font-size: 11px; color: var(--secondary-text); }
+.op-med-item-status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.op-med-item-status.done    { background: rgba(16,185,129,.12); color: #059669; }
+.op-med-item-status.pending { background: rgba(245,158,11,.12);  color: #D97706; }

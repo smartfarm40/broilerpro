@@ -167,6 +167,20 @@
 
         <!-- ===== VIEW OPERATOR/OWNER: Form Input Harian ===== -->
         <div id="daily-input-view">
+          <!-- Target hari ini dari TS (hanya operator) -->
+          <div id="operator-target-banner" class="hidden">
+            <div class="op-target-banner">
+              <div class="op-target-header">
+                <span class="material-icons-round">flag</span>
+                <span>Target Hari Ini</span>
+                <span id="op-target-kandang-name" style="margin-left:auto;font-size:11px;opacity:.8"></span>
+              </div>
+              <div class="op-target-row" id="op-target-row">
+                <!-- diisi JS -->
+              </div>
+            </div>
+          </div>
+
           <!-- Progress Hari -->
           <div class="day-progress-wrap">
             <div class="day-progress-row" id="day-progress-nodes"></div>

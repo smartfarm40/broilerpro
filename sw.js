@@ -1,6 +1,6 @@
 // ===== SERVICE WORKER =====
 // Versi cache — naikkan angka ini setiap kali ada perubahan file
-const CACHE_VERSION = 'broilertrack-v12';
+const CACHE_VERSION = 'broilertrack-v13';
 const CACHE_NAME    = CACHE_VERSION;
 
 const ASSETS = [
