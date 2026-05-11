@@ -105,12 +105,14 @@ const AUTH = {
       try {
         const parsed = JSON.parse(cached);
         // Cache valid 1 jam
-        if (parsed.timestamp && (Date.now() - parsed.timestamp < 3600000)) {
-          this._permissions = parsed.permissions;
+        if (parsed.timestamp && (Date.now() - parsed.timestamp < 3600000) && Array.isArray(parsed.permissions)) {
+          // ⚠️ Harus convert ke Set — localStorage hanya bisa simpan array
+          this._permissions = new Set(parsed.permissions);
           return;
         }
       } catch (e) {
-        // Invalid cache, lanjut query
+        // Invalid cache, hapus dan lanjut query
+        localStorage.removeItem(cacheKey);
       }
     }
 
@@ -124,14 +126,13 @@ const AUTH = {
         // Convert array of objects ke Set untuk O(1) lookup
         this._permissions = new Set(data.map(p => p.permission_code));
         
-        // Simpan ke cache
+        // Simpan ke cache sebagai array (Set tidak bisa di-JSON.stringify)
         localStorage.setItem(cacheKey, JSON.stringify({
           permissions: Array.from(this._permissions),
           timestamp: Date.now()
         }));
       } else {
         console.warn('[AUTH] loadPermissions error:', error?.message);
-        // Fallback ke permissions kosong
         this._permissions = new Set();
       }
     } catch (e) {

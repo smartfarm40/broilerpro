@@ -1,4 +1,4 @@
-ï»¿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
@@ -218,8 +218,8 @@
             <div class="cl-row">
               <span class="cl-label">Suhu</span>
               <div class="cl-inputs">
-                <input type="number" id="cl-suhu" class="cl-input" placeholder="Â°C" step="0.1" min="0" max="50" />
-                <span class="cl-unit">Â°C</span>
+                <input type="number" id="cl-suhu" class="cl-input" placeholder="°C" step="0.1" min="0" max="50" />
+                <span class="cl-unit">°C</span>
               </div>
             </div>
 
@@ -1158,7 +1158,7 @@
   </div>
 
   <!-- Modal: Tambah/Edit Kunjungan -->
-  <div id="modal-visit" class="modal">
+  <div id="modal-visit" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold" id="modal-visit-title">Jadwalkan Kunjungan</h3>
@@ -1248,7 +1248,7 @@
   </div>
 
   <!-- Modal: Detail Kunjungan -->
-  <div id="modal-visit-detail" class="modal">
+  <div id="modal-visit-detail" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold">Detail Kunjungan</h3>
@@ -1268,7 +1268,7 @@
   </div>
 
   <!-- Modal: Complete Kunjungan -->
-  <div id="modal-complete-visit" class="modal">
+  <div id="modal-complete-visit" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold">Selesaikan Kunjungan</h3>
@@ -1321,7 +1321,7 @@
   </div>
 
   <!-- ===== MODAL: Buat / Edit Target ===== -->
-  <div id="modal-target" class="modal">
+  <div id="modal-target" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold" id="modal-target-title">Buat Target Baru</h3>
@@ -1428,7 +1428,7 @@
   </div>
 
   <!-- ===== MODAL: Detail Target ===== -->
-  <div id="modal-target-detail" class="modal">
+  <div id="modal-target-detail" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold" id="target-detail-title">Detail Target</h3>
@@ -1454,7 +1454,7 @@
   </div>
 
   <!-- ===== MODAL: Buat / Edit Program Kesehatan ===== -->
-  <div id="modal-program" class="modal">
+  <div id="modal-program" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold" id="modal-program-title">Buat Program Kesehatan</h3>
@@ -1502,7 +1502,7 @@
   </div>
 
   <!-- ===== MODAL: Detail Program ===== -->
-  <div id="modal-program-detail" class="modal">
+  <div id="modal-program-detail" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold" id="program-detail-title">Detail Program</h3>
@@ -1524,7 +1524,7 @@
   </div>
 
   <!-- ===== MODAL: Catat Pemberian Obat ===== -->
-  <div id="modal-give-med" class="modal">
+  <div id="modal-give-med" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
         <h3 class="title-large bold">Catat Pemberian</h3>
@@ -1561,7 +1561,7 @@
   </div>
 
   <!-- ===== MODAL: Input Pengiriman ===== -->
-  <div id="modal-delivery" class="modal">
+  <div id="modal-delivery" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold" id="modal-delivery-title">Input Pengiriman</h3>
@@ -1607,7 +1607,7 @@
           </div>
         </div>
 
-        <!-- Harga â€” hanya tampil untuk Staff/Owner/Manager -->
+        <!-- Harga — hanya tampil untuk Staff/Owner/Manager -->
         <div id="delivery-price-section" class="form-row-2">
           <div class="auth-field">
             <label class="auth-label">Harga Satuan (Rp)</label>
@@ -1665,7 +1665,7 @@
   </div>
 
   <!-- ===== MODAL: Detail Pengiriman ===== -->
-  <div id="modal-delivery-detail" class="modal">
+  <div id="modal-delivery-detail" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold" id="delivery-detail-title">Detail Pengiriman</h3>
@@ -1690,7 +1690,7 @@
   </div>
 
   <!-- ===== MODAL: Buat / Edit Cost Produksi ===== -->
-  <div id="modal-cost" class="modal">
+  <div id="modal-cost" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold" id="modal-cost-title">Buat Laporan Cost</h3>
@@ -1792,7 +1792,7 @@
   </div>
 
   <!-- ===== MODAL: Detail Cost ===== -->
-  <div id="modal-cost-detail" class="modal">
+  <div id="modal-cost-detail" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold" id="cost-detail-title">Detail Cost Produksi</h3>
@@ -1819,7 +1819,7 @@
   <!-- Toast Notification -->
   <div id="toast" class="toast hidden"></div>
 
-  <!-- Supabase SDK â€” harus dimuat sebelum auth-store.js -->
+  <!-- Supabase SDK — harus dimuat sebelum auth-store.js -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/auth/auth-store.js"></script>
