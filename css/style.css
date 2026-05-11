@@ -1988,3 +1988,144 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
   gap: 6px;
 }
 .btn-secondary:hover { background: var(--outline-variant); }
+
+/* ===== TS REPORT HISTORY ===== */
+
+.ts-report-filter {
+  padding: 12px 16px 0;
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--outline-variant);
+}
+.ts-filter-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-bottom: 12px;
+}
+
+/* Summary strip */
+.ts-report-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px 16px;
+}
+.ts-summary-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--outline-variant);
+  text-align: center;
+}
+.ts-summary-card .val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+.ts-summary-card .lbl {
+  font-size: 11px;
+  color: var(--secondary-text);
+  margin-top: 2px;
+}
+
+/* Report list */
+.ts-report-list {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Kandang group header */
+.ts-kandang-group {
+  margin-bottom: 4px;
+}
+.ts-kandang-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 6px;
+  border-bottom: 2px solid var(--primary);
+  margin-bottom: 8px;
+}
+.ts-kandang-header .material-icons-round {
+  color: var(--primary);
+  font-size: 18px;
+}
+.ts-kandang-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  flex: 1;
+}
+.ts-kandang-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(59,130,246,.12);
+  color: var(--primary);
+}
+
+/* Log row card */
+.ts-log-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--outline-variant);
+}
+.ts-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.ts-log-day {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+.ts-log-date {
+  font-size: 11px;
+  color: var(--secondary-text);
+}
+.ts-log-complete {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.ts-log-complete.done    { background: rgba(16,185,129,.12); color: #059669; }
+.ts-log-complete.pending { background: rgba(245,158,11,.12);  color: #D97706; }
+
+.ts-log-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.ts-metric {
+  text-align: center;
+  background: var(--surface-variant);
+  border-radius: 8px;
+  padding: 6px 4px;
+}
+.ts-metric .val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+.ts-metric .lbl {
+  font-size: 10px;
+  color: var(--secondary-text);
+  margin-top: 1px;
+}
+.ts-metric.alert .val { color: #EF4444; }
+.ts-metric.warn  .val { color: #F59E0B; }
+.ts-metric.good  .val { color: #10B981; }
+
+@media (max-width: 400px) {
+  .ts-log-metrics { grid-template-columns: repeat(2, 1fr); }
+  .ts-report-summary { grid-template-columns: repeat(3, 1fr); }
+}

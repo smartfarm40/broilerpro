@@ -411,6 +411,23 @@ function renderRecentActivity() {
 
 // ---- DAILY ----
 function renderDaily() {
+  const role = AUTH.role;
+
+  // ── TS: tampilkan histori laporan semua kandang ───────────────────────────
+  if (role === 'ts') {
+    document.getElementById('daily-ts-view').classList.remove('hidden');
+    document.getElementById('daily-input-view').classList.add('hidden');
+    document.getElementById('daily-day-title').textContent = 'Histori Laporan';
+    document.getElementById('daily-page-subtitle').textContent = '1 Minggu Terakhir';
+    _populateTSKandangFilter();
+    renderTSReportHistory();
+    return;
+  }
+
+  // ── Operator/Owner/Manager: form input harian ─────────────────────────────
+  document.getElementById('daily-ts-view').classList.add('hidden');
+  document.getElementById('daily-input-view').classList.remove('hidden');
+
   const day = getCurrentDay();
   const el = document.getElementById('daily-day-title');
   if (el) el.textContent = 'Hari ' + day;
@@ -426,7 +443,7 @@ function renderDaily() {
     if (log.feed_pm !== null && log.feed_pm !== undefined) document.getElementById('input-feed-pm').value = log.feed_pm;
     calcFeedTotal();
     if (log.water !== null) document.getElementById('input-water').value = log.water;
-    updateTimbangCard(); // weight dari timbang_rows
+    updateTimbangCard();
     renderChecklist();
     renderActivityLog();
     if (log.notes) document.getElementById('input-notes').value = log.notes;
@@ -3688,3 +3705,189 @@ navigateTo = function(page) {
   };
   if (renders[page]) renders[page]();
 };
+
+// ============================================================
+// ===== TS REPORT HISTORY =====
+// Histori laporan harian semua kandang aktif untuk role TS
+// ============================================================
+
+// Isi dropdown filter kandang
+async function _populateTSKandangFilter() {
+  const sel = document.getElementById('ts-filter-kandang');
+  if (!sel || sel.options.length > 1) return; // sudah diisi
+
+  const flocks = DB.flocks.filter(f => f.active);
+  flocks.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f._dbId || f.id;
+    opt.textContent = f.name || f.nama || f.id;
+    sel.appendChild(opt);
+  });
+}
+
+// Render histori laporan untuk TS
+async function renderTSReportHistory() {
+  const listEl    = document.getElementById('ts-report-list');
+  const summaryEl = document.getElementById('ts-report-summary');
+  if (!listEl) return;
+
+  listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--hint)"><span class="material-icons-round spin">refresh</span></div>';
+
+  const filterKandang = document.getElementById('ts-filter-kandang')?.value || '';
+  const filterDays    = parseInt(document.getElementById('ts-filter-days')?.value) || 7;
+
+  // Hitung tanggal range
+  const endDate   = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - (filterDays - 1));
+  const startStr = startDate.toISOString().split('T')[0];
+  const endStr   = endDate.toISOString().split('T')[0];
+
+  try {
+    const client = AUTH.getSupabase();
+    if (!client) throw new Error('Supabase tidak tersedia');
+
+    // Query data_harian dari semua kandang aktif dalam range
+    let q = client
+      .from('data_harian')
+      .select(`
+        id, kandang_id, hari, tanggal,
+        mati, culling, pakan_total, feed_am, feed_pm, feed_code,
+        berat_rata_rata, is_complete, catatan,
+        kandang:kandangs(id, name, kapasitas, usia)
+      `)
+      .gte('tanggal', startStr)
+      .lte('tanggal', endStr)
+      .order('tanggal', { ascending: false })
+      .order('kandang_id');
+
+    if (filterKandang) q = q.eq('kandang_id', filterKandang);
+
+    const { data, error } = await q;
+    if (error) throw error;
+
+    const logs = data || [];
+
+    // ── Summary stats ─────────────────────────────────────────────────────
+    const totalLogs     = logs.length;
+    const completedLogs = logs.filter(l => l.is_complete).length;
+    const totalMati     = logs.reduce((s, l) => s + (l.mati || 0), 0);
+    const avgPakan      = logs.length
+      ? (logs.reduce((s, l) => s + (l.pakan_total || 0), 0) / logs.length).toFixed(1)
+      : 0;
+
+    if (summaryEl) {
+      summaryEl.innerHTML = `
+        <div class="ts-summary-card">
+          <div class="val">${totalLogs}</div>
+          <div class="lbl">Total Laporan</div>
+        </div>
+        <div class="ts-summary-card">
+          <div class="val" style="color:${completedLogs === totalLogs && totalLogs > 0 ? '#10B981' : '#F59E0B'}">${completedLogs}/${totalLogs}</div>
+          <div class="lbl">Selesai</div>
+        </div>
+        <div class="ts-summary-card">
+          <div class="val" style="color:${totalMati > 0 ? '#EF4444' : '#10B981'}">${totalMati}</div>
+          <div class="lbl">Total Mati</div>
+        </div>`;
+    }
+
+    if (!logs.length) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <span class="material-icons-round" style="font-size:48px;color:var(--hint)">history</span>
+          <p class="body-medium secondary-text">Tidak ada laporan dalam ${filterDays} hari terakhir</p>
+        </div>`;
+      return;
+    }
+
+    // ── Group by kandang ──────────────────────────────────────────────────
+    const grouped = {};
+    logs.forEach(l => {
+      const kid  = l.kandang_id;
+      const name = l.kandang?.name || l.kandang?.nama || kid;
+      if (!grouped[kid]) grouped[kid] = { name, logs: [] };
+      grouped[kid].logs.push(l);
+    });
+
+    // ── Render ────────────────────────────────────────────────────────────
+    listEl.innerHTML = Object.entries(grouped).map(([kid, group]) => {
+      const logsHtml = group.logs.map(l => _buildTSLogCard(l)).join('');
+      const doneCount = group.logs.filter(l => l.is_complete).length;
+      return `
+        <div class="ts-kandang-group">
+          <div class="ts-kandang-header">
+            <span class="material-icons-round">home_work</span>
+            <span class="ts-kandang-name">${group.name}</span>
+            <span class="ts-kandang-badge">${doneCount}/${group.logs.length} selesai</span>
+          </div>
+          ${logsHtml}
+        </div>`;
+    }).join('');
+
+  } catch (e) {
+    console.error('[TS Report] error:', e.message);
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <span class="material-icons-round" style="font-size:48px;color:var(--error)">error_outline</span>
+        <p class="body-medium secondary-text">Gagal memuat laporan: ${e.message}</p>
+      </div>`;
+  }
+}
+
+function _buildTSLogCard(l) {
+  const tanggal = l.tanggal
+    ? new Date(l.tanggal).toLocaleDateString('id-ID', { weekday:'short', day:'numeric', month:'short' })
+    : '-';
+
+  const isDone    = l.is_complete;
+  const mati      = l.mati ?? '-';
+  const culling   = l.culling ?? '-';
+  const pakan     = l.pakan_total ? l.pakan_total.toFixed(1) + ' kg' : '-';
+  const berat     = l.berat_rata_rata ? l.berat_rata_rata + ' g' : '-';
+
+  // Warna alert mortalitas
+  const kapasitas = l.kandang?.kapasitas || 1000;
+  const mortalityPct = l.mati ? (l.mati / kapasitas * 100) : 0;
+  const matiClass = mortalityPct >= 2 ? 'alert' : mortalityPct >= 1 ? 'warn' : '';
+
+  // Warna berat vs target
+  const targetBerat = getTargetWeight(l.hari, 'Cobb 500');
+  let beratClass = '';
+  if (l.berat_rata_rata && targetBerat) {
+    const dev = Math.abs(l.berat_rata_rata - targetBerat) / targetBerat * 100;
+    beratClass = dev > 10 ? 'alert' : dev > 5 ? 'warn' : 'good';
+  }
+
+  return `
+    <div class="ts-log-card">
+      <div class="ts-log-header">
+        <div>
+          <span class="ts-log-day">Hari ${l.hari || '-'}</span>
+          <span class="ts-log-date" style="margin-left:8px">${tanggal}</span>
+        </div>
+        <span class="ts-log-complete ${isDone ? 'done' : 'pending'}">
+          ${isDone ? '✓ Selesai' : '⏳ Belum'}
+        </span>
+      </div>
+      <div class="ts-log-metrics">
+        <div class="ts-metric ${matiClass}">
+          <div class="val">${mati}</div>
+          <div class="lbl">Mati</div>
+        </div>
+        <div class="ts-metric">
+          <div class="val">${culling}</div>
+          <div class="lbl">Afkir</div>
+        </div>
+        <div class="ts-metric">
+          <div class="val">${pakan}</div>
+          <div class="lbl">Pakan</div>
+        </div>
+        <div class="ts-metric ${beratClass}">
+          <div class="val">${berat}</div>
+          <div class="lbl">Berat</div>
+        </div>
+      </div>
+      ${l.catatan ? `<div style="margin-top:8px;font-size:12px;color:var(--secondary-text);padding:6px 8px;background:var(--surface-variant);border-radius:6px">${l.catatan}</div>` : ''}
+    </div>`;
+}

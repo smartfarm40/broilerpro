@@ -122,17 +122,55 @@
             <div class="header-inner">
               <div class="header-text">
                 <h2 class="display-small" id="daily-day-title">Hari 24</h2>
-                <p class="title-medium opacity-90">BroilerTrack Laporan Harian</p>
+                <p class="title-medium opacity-90" id="daily-page-subtitle">BroilerTrack Laporan Harian</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Progress Hari -->
-        <div class="day-progress-wrap">
-          <div class="day-progress-row" id="day-progress-nodes"></div>
-          <div class="divider-line"></div>
+        <!-- ===== VIEW TS: Histori Laporan Semua Kandang ===== -->
+        <div id="daily-ts-view" class="hidden">
+          <div class="page-body">
+            <!-- Filter bar -->
+            <div class="ts-report-filter">
+              <div class="ts-filter-row">
+                <select id="ts-filter-kandang" class="form-select" onchange="renderTSReportHistory()"
+                        style="flex:1">
+                  <option value="">Semua Kandang</option>
+                </select>
+                <select id="ts-filter-days" class="form-select" onchange="renderTSReportHistory()"
+                        style="width:110px">
+                  <option value="7">7 Hari</option>
+                  <option value="14">14 Hari</option>
+                  <option value="30">30 Hari</option>
+                </select>
+                <button class="icon-btn-outline" onclick="renderTSReportHistory()" title="Refresh">
+                  <span class="material-icons-round">refresh</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Summary cards -->
+            <div id="ts-report-summary" class="ts-report-summary"></div>
+
+            <!-- Histori list -->
+            <div id="ts-report-list" class="ts-report-list">
+              <div class="empty-state">
+                <span class="material-icons-round" style="font-size:48px;color:var(--hint)">history</span>
+                <p class="body-medium secondary-text">Memuat histori laporan...</p>
+              </div>
+            </div>
+            <div class="spacer-xxl"></div>
+          </div>
         </div>
+
+        <!-- ===== VIEW OPERATOR/OWNER: Form Input Harian ===== -->
+        <div id="daily-input-view">
+          <!-- Progress Hari -->
+          <div class="day-progress-wrap">
+            <div class="day-progress-row" id="day-progress-nodes"></div>
+            <div class="divider-line"></div>
+          </div>
 
         <div class="page-body">
           <!-- Form Input -->
@@ -314,6 +352,7 @@
 
           <div class="spacer-xxl"></div>
         </div>
+        </div><!-- end #daily-input-view -->
       </section>
 
       <!-- ===== HALAMAN MANAJEMEN KANDANG ===== -->
