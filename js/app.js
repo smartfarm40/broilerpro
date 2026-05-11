@@ -934,14 +934,68 @@ function exportReport() {
 
 // ===== TEAM MANAGEMENT =====
 function renderSettings() {
-  document.getElementById('farm-name-display').textContent = DB.settings.farmName || AUTH.tenantName;
-  document.getElementById('toggle-push').checked   = DB.settings.pushAlerts;
-  document.getElementById('toggle-weekly').checked = DB.settings.weeklyReports;
-  document.getElementById('toggle-dark').checked   = DB.settings.darkMode;
-  renderTeamMembers();
-  // Sembunyikan undang jika bukan owner/manager
-  const btnInvite = document.getElementById('btn-show-invite');
-  if (btnInvite) btnInvite.style.display = AUTH.can('member.invite') ? '' : 'none';
+  const role = AUTH.role;
+  const isTS = role === 'ts';
+
+  // ── Pilih view berdasarkan role ──────────────────────────────────────────
+  const tsView   = document.getElementById('settings-ts-view');
+  const fullView = document.getElementById('settings-full-view');
+
+  if (isTS) {
+    // Tampilkan view TS
+    tsView.classList.remove('hidden');
+    fullView.classList.add('hidden');
+
+    // Update subtitle header
+    const subtitle = document.getElementById('settings-page-subtitle');
+    if (subtitle) subtitle.textContent = 'Profil & Preferensi';
+    const icon = document.getElementById('settings-page-icon');
+    if (icon) icon.textContent = 'manage_accounts';
+
+    // Isi profil TS
+    const nama   = AUTH.userName || '-';
+    const email  = AUTH.userEmail || '-';
+    const initials = nama.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+    const avatarEl = document.getElementById('ts-avatar-initials');
+    const nameEl   = document.getElementById('ts-profile-name');
+    const emailEl  = document.getElementById('ts-profile-email');
+    if (avatarEl) avatarEl.textContent = initials;
+    if (nameEl)   nameEl.textContent   = nama;
+    if (emailEl)  emailEl.textContent  = email;
+
+    // Info peternakan
+    const farmEl   = document.getElementById('ts-farm-name');
+    const flocksEl = document.getElementById('ts-active-flocks');
+    if (farmEl)   farmEl.textContent   = DB.settings.farmName || AUTH.tenantName || '-';
+    const activeCount = DB.flocks.filter(f => f.active).length;
+    if (flocksEl) flocksEl.textContent = activeCount + ' kandang aktif';
+
+    // Sync dark mode toggle
+    const darkToggleTS = document.getElementById('toggle-dark-ts');
+    if (darkToggleTS) darkToggleTS.checked = DB.settings.darkMode;
+
+  } else {
+    // Tampilkan view lengkap
+    tsView.classList.add('hidden');
+    fullView.classList.remove('hidden');
+
+    const farmNameEl = document.getElementById('farm-name-display');
+    if (farmNameEl) farmNameEl.textContent = DB.settings.farmName || AUTH.tenantName;
+
+    const pushEl   = document.getElementById('toggle-push');
+    const weeklyEl = document.getElementById('toggle-weekly');
+    const darkEl   = document.getElementById('toggle-dark');
+    if (pushEl)   pushEl.checked   = DB.settings.pushAlerts;
+    if (weeklyEl) weeklyEl.checked = DB.settings.weeklyReports;
+    if (darkEl)   darkEl.checked   = DB.settings.darkMode;
+
+    renderTeamMembers();
+
+    // Sembunyikan undang jika bukan owner/manager
+    const btnInvite = document.getElementById('btn-show-invite');
+    if (btnInvite) btnInvite.style.display = AUTH.can('member.invite') ? '' : 'none';
+  }
 }
 
 async function renderTeamMembers() {
