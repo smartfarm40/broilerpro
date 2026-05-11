@@ -181,25 +181,37 @@ const AUTH = {
   can(permission) {
     // Jika permissions belum dimuat, return false
     if (!this._permissions) return false;
-    
+
+    // Handle jika _permissions adalah Array (dari cache lama) bukan Set
+    if (Array.isArray(this._permissions)) {
+      // Convert ke Set dan simpan
+      this._permissions = new Set(this._permissions);
+    }
+
     // Check dari Set (O(1) lookup)
     return this._permissions.has(permission);
   },
 
   // ---- Get all permissions ----
   getPermissions() {
-    return this._permissions ? Array.from(this._permissions) : [];
+    if (!this._permissions) return [];
+    if (Array.isArray(this._permissions)) {
+      this._permissions = new Set(this._permissions);
+    }
+    return Array.from(this._permissions);
   },
 
   // ---- Check multiple permissions (OR logic) ----
   canAny(...permissions) {
     if (!this._permissions) return false;
+    if (Array.isArray(this._permissions)) this._permissions = new Set(this._permissions);
     return permissions.some(p => this._permissions.has(p));
   },
 
   // ---- Check multiple permissions (AND logic) ----
   canAll(...permissions) {
     if (!this._permissions) return false;
+    if (Array.isArray(this._permissions)) this._permissions = new Set(this._permissions);
     return permissions.every(p => this._permissions.has(p));
   },
 

@@ -2015,7 +2015,8 @@ async function renderTargets() {
 
     // Sembunyikan tombol tambah jika tidak punya permission
     const btnWrap = document.getElementById('btn-add-target-wrap');
-    if (btnWrap) btnWrap.style.display = AUTH.can('target.create') ? '' : 'none';
+    const canCreate = AUTH.can('target.create') || ['ts','owner','manager'].includes(AUTH.role);
+    if (btnWrap) btnWrap.style.display = canCreate ? '' : 'none';
 
     if (!filtered.length) {
       list.innerHTML = `
@@ -2411,7 +2412,8 @@ async function renderHealth() {
 
   // Sembunyikan tombol tambah jika tidak punya permission
   const btnWrap = document.getElementById('btn-add-program-wrap');
-  if (btnWrap) btnWrap.style.display = AUTH.can('health.create') ? '' : 'none';
+  const canCreate = AUTH.can('health.create') || ['ts','owner','manager'].includes(AUTH.role);
+  if (btnWrap) btnWrap.style.display = canCreate ? '' : 'none';
 
   if (_currentHealthTab === 'today') {
     await _renderHealthToday(content);
@@ -2877,7 +2879,8 @@ async function renderDelivery() {
 
   // Sembunyikan tombol tambah jika tidak punya permission
   const btnWrap = document.getElementById('btn-add-delivery-wrap');
-  if (btnWrap) btnWrap.style.display = AUTH.can('delivery.create') ? '' : 'none';
+  const canCreate = AUTH.can('delivery.create') || ['staff','owner','manager'].includes(AUTH.role);
+  if (btnWrap) btnWrap.style.display = canCreate ? '' : 'none';
 
   const filters = {};
   if (_currentDeliveryTab !== 'all') filters.status = _currentDeliveryTab;
@@ -3191,7 +3194,8 @@ async function renderCost() {
   content.innerHTML = '<div style="text-align:center;padding:24px;color:var(--hint)"><span class="material-icons-round spin">refresh</span></div>';
 
   const btnWrap = document.getElementById('btn-add-cost-wrap');
-  if (btnWrap) btnWrap.style.display = AUTH.can('cost.create') ? '' : 'none';
+  const canCreate = AUTH.can('cost.create') || ['staff','owner','manager'].includes(AUTH.role);
+  if (btnWrap) btnWrap.style.display = canCreate ? '' : 'none';
 
   if (_currentCostTab === 'list') {
     await _renderCostList(content);
