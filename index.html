@@ -218,8 +218,8 @@
             <div class="cl-row">
               <span class="cl-label">Suhu</span>
               <div class="cl-inputs">
-                <input type="number" id="cl-suhu" class="cl-input" placeholder="°C" step="0.1" min="0" max="50" />
-                <span class="cl-unit">°C</span>
+                <input type="number" id="cl-suhu" class="cl-input" placeholder="ï¿½C" step="0.1" min="0" max="50" />
+                <span class="cl-unit">ï¿½C</span>
               </div>
             </div>
 
@@ -970,7 +970,7 @@
         <span class="material-icons-round">inventory_2</span>
         <span>Inventori</span>
       </button>
-      <button class="nav-item" onclick="navigateTo('visits')" data-page="visits">
+      <button class="nav-item" id="nav-visits" onclick="navigateTo('visits')" data-page="visits">
         <span class="material-icons-round">event_available</span>
         <span>Kunjungan</span>
       </button>
@@ -999,11 +999,11 @@
   </div>
 
   <!-- Modal Tambah Kandang -->
-  <div id="modal-add-flock" class="modal-overlay hidden">
-    <div class="modal-card modal-card--flock">
+  <div id="modal-add-flock" class="modal hidden">
+    <div class="modal-content modal-content-lg">
       <div class="modal-header">
         <h3 class="title-large bold">Tambah Kandang Baru</h3>
-        <button class="icon-btn" onclick="closeModal('modal-add-flock')">
+        <button class="icon-btn-ghost" onclick="closeModal('modal-add-flock')">
           <span class="material-icons-round">close</span>
         </button>
       </div>
@@ -1082,8 +1082,8 @@
   </div>
 
   <!-- Modal Timbang Berat Badan -->
-  <div id="modal-timbang" class="modal-overlay hidden">
-    <div class="modal-card modal-card--timbang">
+  <div id="modal-timbang" class="modal hidden">
+    <div class="modal-content modal-content-lg">
 
       <!-- Header -->
       <div class="timbang-header">
@@ -1607,7 +1607,7 @@
           </div>
         </div>
 
-        <!-- Harga — hanya tampil untuk Staff/Owner/Manager -->
+        <!-- Harga ï¿½ hanya tampil untuk Staff/Owner/Manager -->
         <div id="delivery-price-section" class="form-row-2">
           <div class="auth-field">
             <label class="auth-label">Harga Satuan (Rp)</label>
@@ -1819,7 +1819,7 @@
   <!-- Toast Notification -->
   <div id="toast" class="toast hidden"></div>
 
-  <!-- Supabase SDK — harus dimuat sebelum auth-store.js -->
+  <!-- Supabase SDK ï¿½ harus dimuat sebelum auth-store.js -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/auth/auth-store.js"></script>
