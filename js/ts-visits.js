@@ -13,30 +13,17 @@ const TSVisits = {
         .from('ts_visits')
         .select(`
           *,
-          kandang:kandangs(id, nama, lokasi, populasi_awal, hari_ke),
-          ts_user:users!ts_visits_ts_user_id_fkey(id, nama, email)
+          kandang:kandangs(id, name, kapasitas, usia, breed),
+          ts_user:profiles!ts_visits_ts_user_id_fkey(id, nama)
         `)
         .order('tanggal_kunjungan', { ascending: true });
 
-      // Apply filters
-      if (filters.kandang_id) {
-        query = query.eq('kandang_id', filters.kandang_id);
-      }
-      if (filters.ts_user_id) {
-        query = query.eq('ts_user_id', filters.ts_user_id);
-      }
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters.tujuan) {
-        query = query.eq('tujuan', filters.tujuan);
-      }
-      if (filters.start_date) {
-        query = query.gte('tanggal_kunjungan', filters.start_date);
-      }
-      if (filters.end_date) {
-        query = query.lte('tanggal_kunjungan', filters.end_date);
-      }
+      if (filters.kandang_id)  query = query.eq('kandang_id', filters.kandang_id);
+      if (filters.ts_user_id)  query = query.eq('ts_user_id', filters.ts_user_id);
+      if (filters.status)      query = query.eq('status', filters.status);
+      if (filters.tujuan)      query = query.eq('tujuan', filters.tujuan);
+      if (filters.start_date)  query = query.gte('tanggal_kunjungan', filters.start_date);
+      if (filters.end_date)    query = query.lte('tanggal_kunjungan', filters.end_date);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -57,8 +44,8 @@ const TSVisits = {
         .from('ts_visits')
         .select(`
           *,
-          kandang:kandangs(id, nama, lokasi, populasi_awal, hari_ke, breed),
-          ts_user:users!ts_visits_ts_user_id_fkey(id, nama, email)
+          kandang:kandangs(id, name, kapasitas, usia, breed),
+          ts_user:profiles!ts_visits_ts_user_id_fkey(id, nama)
         `)
         .eq('id', visitId)
         .single();

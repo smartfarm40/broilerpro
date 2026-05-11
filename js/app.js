@@ -1599,7 +1599,7 @@ function renderVisitsList() {
     const date = new Date(visit.tanggal_kunjungan);
     const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     const timeStr = visit.waktu_mulai ? visit.waktu_mulai.substring(0, 5) : '-';
-    const kandangName = visit.kandang ? visit.kandang.nama : 'Kandang tidak ditemukan';
+    const kandangName = visit.kandang ? (visit.kandang.name || visit.kandang.nama) : 'Kandang tidak ditemukan';
     const statusColor = TSVisits.getStatusColor(visit.status);
     const statusLabel = TSVisits.formatStatus(visit.status);
     const tujuanIcon = TSVisits.getTujuanIcon(visit.tujuan);
@@ -1648,7 +1648,7 @@ async function showAddVisitModal() {
   const select = document.getElementById('visit-kandang');
   if (select) {
     select.innerHTML = '<option value="">Pilih kandang...</option>' +
-      kandangs.map(k => '<option value="' + k.id + '">' + k.nama + '</option>').join('');
+      kandangs.map(k => '<option value="' + k.id + '">' + (k.name || k.nama || k.id) + '</option>').join('');
   }
   
   // Reset form
@@ -1733,7 +1733,7 @@ async function showVisitDetail(visitId) {
   const date = new Date(visit.tanggal_kunjungan);
   const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const timeStr = visit.waktu_mulai ? visit.waktu_mulai.substring(0, 5) : '-';
-  const kandangName = visit.kandang ? visit.kandang.nama : 'Kandang tidak ditemukan';
+  const kandangName = visit.kandang ? (visit.kandang.name || visit.kandang.nama || '-') : 'Kandang tidak ditemukan';
   const statusColor = TSVisits.getStatusColor(visit.status);
   const statusLabel = TSVisits.formatStatus(visit.status);
   const tujuanLabel = TSVisits.formatTujuan(visit.tujuan);
@@ -1910,7 +1910,7 @@ async function editVisit(visitId) {
   const select = document.getElementById('visit-kandang');
   if (select) {
     select.innerHTML = '<option value="">Pilih kandang...</option>' +
-      kandangs.map(k => '<option value="' + k.id + '">' + k.nama + '</option>').join('');
+      kandangs.map(k => '<option value="' + k.id + '">' + (k.name || k.nama || k.id) + '</option>').join('');
   }
   
   // Populate form
@@ -1945,13 +1945,17 @@ async function loadKandangsForSelect() {
   try {
     const client = AUTH.getSupabase();
     if (!client) return [];
-    
+
+    // Gunakan DB.flocks yang sudah dimuat jika tersedia
+    if (DB.flocks && DB.flocks.length > 0) {
+      return DB.flocks.map(f => ({ id: f._dbId || f.id, name: f.name || f.nama || f.id }));
+    }
+
     const { data, error } = await client
       .from('kandangs')
-      .select('id, nama')
-      .eq('tenant_id', AUTH.tenantId)
-      .order('nama');
-    
+      .select('id, name')
+      .order('name');
+
     if (error) throw error;
     return data || [];
   } catch (e) {
