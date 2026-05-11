@@ -935,26 +935,34 @@ function exportReport() {
 // ===== TEAM MANAGEMENT =====
 function renderSettings() {
   const role = AUTH.role;
-  const isTS = role === 'ts';
 
-  // ── Pilih view berdasarkan role ──────────────────────────────────────────
+  // Role yang dapat tampilan terbatas (bukan owner/manager)
+  const isLimitedView = !['owner', 'manager'].includes(role);
+
   const tsView   = document.getElementById('settings-ts-view');
   const fullView = document.getElementById('settings-full-view');
 
-  if (isTS) {
-    // Tampilkan view TS
+  if (isLimitedView) {
+    // ── Tampilan terbatas: semua role kecuali owner/manager ──────────────
     tsView.classList.remove('hidden');
     fullView.classList.add('hidden');
 
-    // Update subtitle header
+    // Update header sesuai role
     const subtitle = document.getElementById('settings-page-subtitle');
-    if (subtitle) subtitle.textContent = 'Profil & Preferensi';
-    const icon = document.getElementById('settings-page-icon');
-    if (icon) icon.textContent = 'manage_accounts';
+    const icon     = document.getElementById('settings-page-icon');
+    const roleLabels = {
+      ts:       { text: 'Profil & Preferensi',  icon: 'manage_accounts' },
+      staff:    { text: 'Profil & Preferensi',  icon: 'manage_accounts' },
+      operator: { text: 'Profil & Preferensi',  icon: 'manage_accounts' },
+      viewer:   { text: 'Profil',               icon: 'manage_accounts' }
+    };
+    const rl = roleLabels[role] || { text: 'Profil', icon: 'manage_accounts' };
+    if (subtitle) subtitle.textContent = rl.text;
+    if (icon)     icon.textContent     = rl.icon;
 
-    // Isi profil TS
-    const nama   = AUTH.userName || '-';
-    const email  = AUTH.userEmail || '-';
+    // Isi profil
+    const nama     = AUTH.userName || '-';
+    const email    = AUTH.userEmail || '-';
     const initials = nama.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
     const avatarEl = document.getElementById('ts-avatar-initials');
@@ -963,6 +971,16 @@ function renderSettings() {
     if (avatarEl) avatarEl.textContent = initials;
     if (nameEl)   nameEl.textContent   = nama;
     if (emailEl)  emailEl.textContent  = email;
+
+    // Ganti label role di profil card
+    const roleEl = tsView.querySelector('.ts-profile-role');
+    const roleDisplayNames = {
+      ts:       'Technical Service',
+      staff:    'Staff Kantor',
+      operator: 'Operator Kandang',
+      viewer:   'Viewer'
+    };
+    if (roleEl) roleEl.textContent = roleDisplayNames[role] || role;
 
     // Info peternakan
     const farmEl   = document.getElementById('ts-farm-name');
@@ -976,7 +994,7 @@ function renderSettings() {
     if (darkToggleTS) darkToggleTS.checked = DB.settings.darkMode;
 
   } else {
-    // Tampilkan view lengkap
+    // ── Tampilan lengkap: owner & manager ────────────────────────────────
     tsView.classList.add('hidden');
     fullView.classList.remove('hidden');
 
@@ -992,7 +1010,6 @@ function renderSettings() {
 
     renderTeamMembers();
 
-    // Sembunyikan undang jika bukan owner/manager
     const btnInvite = document.getElementById('btn-show-invite');
     if (btnInvite) btnInvite.style.display = AUTH.can('member.invite') ? '' : 'none';
   }
