@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prediksi Panen - BroilerTrack</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: #11998e;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(17, 153, 142, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .result {
+      margin-top: 30px;
+      display: none;
+    }
+
+    .result.show {
+      display: block;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #11998e;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .prediction-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+    }
+
+    .prediction-title {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 10px;
+    }
+
+    .prediction-value {
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .prediction-subtitle {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .info-grid {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+    }
+
+    .info-label {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .info-value {
+      color: #333;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .recommendations {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .recommendations-title {
+      font-weight: 600;
+      color: #856404;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    .recommendation-item {
+      padding: 10px 0;
+      color: #856404;
+      font-size: 14px;
+      line-height: 1.6;
+      border-bottom: 1px solid rgba(133, 100, 4, 0.1);
+    }
+
+    .recommendation-item:last-child {
+      border-bottom: none;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #11998e;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #11998e;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Prediksi Panen</h1>
+    <p class="subtitle">Prediksi berat panen dan kebutuhan pakan berdasarkan data pertumbuhan</p>
+
+    <form id="predictionForm">
+      <div class="form-group">
+        <label for="kandang">Pilih Kandang</label>
+        <select id="kandang" required>
+          <option value="">-- Pilih Kandang --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="targetHari">Target Hari Panen</label>
+        <input type="number" id="targetHari" value="35" min="21" max="45" required>
+      </div>
+
+      <button type="submit" id="predictBtn">
+        Prediksi Panen
+      </button>
+    </form>
+
+    <div class="loading" id="loading" style="display: none;">
+      <div class="spinner"></div>
+      <p>Menghitung prediksi...</p>
+    </div>
+
+    <div class="result" id="result">
+      <div class="prediction-card">
+        <div class="prediction-title">Prediksi Total Berat Panen</div>
+        <div class="prediction-value" id="predictedWeight">0 kg</div>
+        <div class="prediction-subtitle">Hari ke-<span id="targetDay">35</span> • <span id="daysRemaining">0</span> hari lagi</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="predictedFcr">0.000</div>
+          <div class="stat-label">Prediksi FCR</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="feedNeeded">0 kg</div>
+          <div class="stat-label">Pakan Dibutuhkan</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="currentPopulation">0</div>
+          <div class="stat-label">Populasi Saat Ini</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="predictedAvgWeight">0 g</div>
+          <div class="stat-label">Prediksi Berat Rata-rata</div>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="info-label">Kandang</span>
+          <span class="info-value" id="kandangName">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Breed</span>
+          <span class="info-value" id="breed">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Hari Saat Ini</span>
+          <span class="info-value" id="currentDay">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Berat Rata-rata Saat Ini</span>
+          <span class="info-value" id="currentWeight">-</span>
+        </div>
+      </div>
+
+      <div class="recommendations" id="recommendations">
+        <div class="recommendations-title">💡 Rekomendasi</div>
+        <div id="recommendationsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script>
+    const { supabase, DB } = window.SupabaseClient;
+
+    // Load kandangs
+    async function loadKandangs() {
+      try {
+        const kandangs = await DB.getActiveKandangs();
+        const select = document.getElementById('kandang');
+        
+        kandangs.forEach(k => {
+          const option = document.createElement('option');
+          option.value = k.id;
+          option.textContent = `${k.name} - Hari ${k.usia || 0}`;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading kandangs:', error);
+      }
+    }
+
+    // Handle form submission
+    document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const kandangId = document.getElementById('kandang').value;
+      const targetHari = parseInt(document.getElementById('targetHari').value);
+
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('result').classList.remove('show');
+      document.getElementById('predictBtn').disabled = true;
+
+      try {
+        const { data, error } = await supabase.functions.invoke('predict-harvest', {
+          body: {
+            kandang_id: kandangId,
+            target_hari: targetHari
+          }
+        });
+
+        if (error) throw error;
+        displayResult(data);
+      } catch (error) {
+        console.error('Error predicting harvest:', error);
+        alert('Gagal membuat prediksi. Pastikan ada data harian.');
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('predictBtn').disabled = false;
+      }
+    });
+
+    function displayResult(data) {
+      document.getElementById('predictedWeight').textContent = `${data.predicted_total_weight.toFixed(0)} kg`;
+      document.getElementById('targetDay').textContent = data.target_day;
+      document.getElementById('daysRemaining').textContent = data.days_remaining;
+      document.getElementById('predictedFcr').textContent = data.predicted_fcr.toFixed(3);
+      document.getElementById('feedNeeded').textContent = `${data.total_feed_needed.toFixed(0)} kg`;
+      document.getElementById('currentPopulation').textContent = data.current_population.toLocaleString();
+      document.getElementById('predictedAvgWeight').textContent = `${data.predicted_avg_weight.toFixed(0)} g`;
+      
+      document.getElementById('kandangName').textContent = data.kandang_name;
+      document.getElementById('breed').textContent = data.breed;
+      document.getElementById('currentDay').textContent = `Hari ${data.current_day}`;
+      document.getElementById('currentWeight').textContent = `${data.current_avg_weight.toFixed(0)} g`;
+
+      // Display recommendations
+      const recommendationsList = document.getElementById('recommendationsList');
+      recommendationsList.innerHTML = '';
+      data.recommendations.forEach(rec => {
+        const div = document.createElement('div');
+        div.className = 'recommendation-item';
+        div.textContent = rec;
+        recommendationsList.appendChild(div);
+      });
+
+      document.getElementById('result').classList.add('show');
+    }
+
+    // Initialize
+    loadKandangs();
+  </script>
+</body>
+</html>

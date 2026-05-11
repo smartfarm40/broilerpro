@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#3B82F6" />
+  <title>Terima Undangan — BroilerTrack</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body data-theme="light">
+<div class="auth-page">
+
+  <div class="auth-header">
+    <div class="auth-logo"><span class="material-icons-round">egg_alt</span></div>
+    <h1 class="auth-app-name">BroilerTrack</h1>
+    <p class="auth-tagline">Manajemen Peternakan Ayam Broiler</p>
+  </div>
+
+  <!-- Loading -->
+  <div class="auth-card" id="card-loading">
+    <div style="text-align:center;padding:32px 16px">
+      <span class="material-icons-round spin" style="font-size:48px;color:var(--primary)">refresh</span>
+      <p style="margin-top:16px;color:var(--secondary-text)">Memverifikasi undangan...</p>
+    </div>
+  </div>
+
+  <!-- Form lengkapi profil -->
+  <div class="auth-card hidden" id="card-complete">
+    <div class="auth-success-icon" style="background:rgba(59,130,246,.1)">
+      <span class="material-icons-round" style="color:var(--primary)">how_to_reg</span>
+    </div>
+    <h2 class="auth-card-title">Selamat Datang!</h2>
+    <p class="auth-card-sub">Lengkapi profil Anda untuk mulai menggunakan BroilerTrack</p>
+
+    <div class="auth-form">
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">email</span>
+          <input type="email" id="confirm-email" class="auth-input" readonly
+                 style="background:var(--surface-variant);color:var(--secondary-text)" />
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Nama Lengkap</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">person</span>
+          <input type="text" id="confirm-nama" class="auth-input" placeholder="Nama lengkap Anda" />
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Buat Password Baru</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">lock</span>
+          <input type="password" id="confirm-password" class="auth-input" placeholder="Min. 8 karakter" />
+          <button class="auth-eye-btn" onclick="togglePw('confirm-password', this)" tabindex="-1">
+            <span class="material-icons-round">visibility</span>
+          </button>
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Konfirmasi Password</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">lock_outline</span>
+          <input type="password" id="confirm-password2" class="auth-input" placeholder="Ulangi password" />
+        </div>
+      </div>
+
+      <!-- Info role -->
+      <div id="role-info" class="auth-info-box"
+           style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--primary);display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span class="material-icons-round" style="font-size:18px">badge</span>
+        <span id="role-info-text">Memuat role...</span>
+      </div>
+
+      <div class="auth-error hidden" id="confirm-error"></div>
+      <button class="auth-btn auth-btn--primary" onclick="doComplete()" id="confirm-btn">
+        <span class="material-icons-round">check_circle</span>
+        Selesaikan Pendaftaran
+      </button>
+    </div>
+  </div>
+
+  <!-- Sukses -->
+  <div class="auth-card hidden" id="card-success">
+    <div class="auth-success-icon">
+      <span class="material-icons-round">celebration</span>
+    </div>
+    <h2 class="auth-card-title">Akun Siap Digunakan!</h2>
+    <p class="auth-card-sub" id="success-msg">Selamat bergabung di BroilerTrack</p>
+    <button class="auth-btn auth-btn--primary" onclick="window.location.href='../index.html'">
+      <span class="material-icons-round">rocket_launch</span>
+      Buka Aplikasi
+    </button>
+  </div>
+
+  <!-- Error -->
+  <div class="auth-card hidden" id="card-error">
+    <div style="text-align:center;padding:16px">
+      <span class="material-icons-round" style="font-size:48px;color:var(--error)">link_off</span>
+      <h2 class="auth-card-title" style="margin-top:12px">Link Tidak Valid</h2>
+      <p class="auth-card-sub" id="error-msg">Link undangan tidak valid atau sudah kadaluarsa.</p>
+      <a href="login.html" class="auth-btn auth-btn--primary"
+         style="display:inline-flex;margin-top:16px;text-decoration:none">
+        <span class="material-icons-round">login</span>
+        Masuk
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/auth/auth-store.js"></script>
+<script src="../js/auth/auth-service.js"></script>
+<script>
+  const ROLE_LABELS = {
+    owner:   'Pemilik',
+    ts:      'Technical Service (TS)',
+    kandang: 'Petugas Kandang',
+    staff:   'Staff'
+  };
+
+  function showCard(name) {
+    ['loading','complete','success','error'].forEach(n => {
+      document.getElementById('card-' + n).classList.toggle('hidden', n !== name);
+    });
+  }
+
+  function togglePw(id, btn) {
+    const inp  = document.getElementById(id);
+    const show = inp.type === 'password';
+    inp.type   = show ? 'text' : 'password';
+    btn.querySelector('.material-icons-round').textContent = show ? 'visibility_off' : 'visibility';
+  }
+
+  // ---- Proses magic link dari Supabase ----
+  window.addEventListener('load', async () => {
+    const sb = AUTH.getSupabase();
+
+    // Supabase otomatis proses token dari URL hash (#access_token=...&type=invite)
+    const { data: { session }, error } = await sb.auth.getSession();
+
+    if (error || !session) {
+      // Coba exchange token dari URL jika belum ada session
+      const hash = new URLSearchParams(location.hash.replace('#', ''));
+      const accessToken  = hash.get('access_token');
+      const refreshToken = hash.get('refresh_token');
+      const type         = hash.get('type');
+
+      if (type === 'invite' && accessToken) {
+        const { data, error: setErr } = await sb.auth.setSession({
+          access_token:  accessToken,
+          refresh_token: refreshToken || ''
+        });
+
+        if (setErr || !data.session) {
+          document.getElementById('error-msg').textContent =
+            'Link undangan tidak valid atau sudah kadaluarsa. Minta owner untuk mengirim ulang undangan.';
+          showCard('error');
+          return;
+        }
+
+        await initCompleteForm(data.session);
+      } else if (session) {
+        await initCompleteForm(session);
+      } else {
+        document.getElementById('error-msg').textContent =
+          'Link undangan tidak ditemukan. Pastikan Anda membuka link dari email undangan.';
+        showCard('error');
+      }
+      return;
+    }
+
+    // Session sudah ada (user klik link dari email)
+    await initCompleteForm(session);
+  });
+
+  async function initCompleteForm(session) {
+    const sb   = AUTH.getSupabase();
+    const user = session.user;
+
+    // Isi email (readonly)
+    document.getElementById('confirm-email').value = user.email || '';
+
+    // Ambil profil untuk cek role yang sudah di-set owner
+    const { data: profile } = await sb
+      .from('profiles')
+      .select('nama, role')
+      .eq('id', user.id)
+      .single();
+
+    const role = profile?.role || user.user_metadata?.role || 'kandang';
+    document.getElementById('role-info-text').textContent =
+      'Role Anda: ' + (ROLE_LABELS[role] || role);
+
+    // Pre-fill nama jika sudah ada
+    if (profile?.nama && profile.nama !== user.email) {
+      document.getElementById('confirm-nama').value = profile.nama;
+    }
+
+    showCard('complete');
+  }
+
+  async function doComplete() {
+    const sb       = AUTH.getSupabase();
+    const nama     = document.getElementById('confirm-nama').value.trim();
+    const password = document.getElementById('confirm-password').value;
+    const confirm  = document.getElementById('confirm-password2').value;
+    const errEl    = document.getElementById('confirm-error');
+    const btn      = document.getElementById('confirm-btn');
+
+    errEl.classList.add('hidden');
+
+    if (!nama) {
+      errEl.textContent = 'Nama lengkap wajib diisi';
+      errEl.classList.remove('hidden'); return;
+    }
+    if (password.length < 8) {
+      errEl.textContent = 'Password minimal 8 karakter';
+      errEl.classList.remove('hidden'); return;
+    }
+    if (password !== confirm) {
+      errEl.textContent = 'Password tidak cocok';
+      errEl.classList.remove('hidden'); return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons-round spin">refresh</span> Menyimpan...';
+
+    // Update password
+    const { error: pwErr } = await sb.auth.updateUser({ password });
+    if (pwErr) {
+      errEl.textContent = 'Gagal set password: ' + pwErr.message;
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-icons-round">check_circle</span> Selesaikan Pendaftaran';
+      return;
+    }
+
+    // Update nama di profil
+    const { data: { user } } = await sb.auth.getUser();
+    if (user) {
+      await sb.from('profiles').update({ nama }).eq('id', user.id);
+      await sb.auth.updateUser({ data: { nama } });
+    }
+
+    btn.disabled = false;
+    document.getElementById('success-msg').textContent =
+      'Selamat datang, ' + nama + '! Akun Anda sudah siap digunakan.';
+    showCard('success');
+  }
+</script>
+</body>
+</html>

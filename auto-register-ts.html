@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Register TS User - BroilerTrack</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .info-box {
+      background: #f0f4ff;
+      border-left: 4px solid #667eea;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+
+    .info-box h3 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .info-box p {
+      color: #555;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .credentials {
+      background: #fff9e6;
+      border: 2px solid #ffc107;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+
+    .credentials h3 {
+      color: #f57c00;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .credentials code {
+      display: block;
+      background: white;
+      padding: 8px 12px;
+      margin: 5px 0;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #f0f4ff;
+      color: #667eea;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e8ff;
+    }
+
+    .status {
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .status.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      display: block;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      display: block;
+    }
+
+    .status.loading {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+      display: block;
+    }
+
+    .status h4 {
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .status p {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 3px solid rgba(0,0,0,0.1);
+      border-radius: 50%;
+      border-top-color: #0c5460;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .warning {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .warning h4 {
+      color: #856404;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .warning p {
+      color: #856404;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .steps {
+      margin-top: 20px;
+    }
+
+    .step {
+      display: flex;
+      align-items: start;
+      margin-bottom: 15px;
+    }
+
+    .step-number {
+      background: #667eea;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-content h4 {
+      color: #333;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+
+    .step-content p {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Auto Register TS User</h1>
+    <p class="subtitle">Registrasi otomatis user Technical Service untuk testing</p>
+
+    <div class="warning">
+      <h4>⚠️ PENTING: Disable Email Confirmation Dulu!</h4>
+      <p>
+        Sebelum register, pastikan sudah disable email confirmation di Supabase Dashboard:<br>
+        <strong>Dashboard > Authentication > Settings > Email Auth > Disable "Enable email confirmations"</strong>
+      </p>
+    </div>
+
+    <div class="info-box">
+      <h3>📋 User yang akan dibuat:</h3>
+      <p>
+        <strong>Nama:</strong> Drh. Rahmat S<br>
+        <strong>Role:</strong> TS (Technical Service)<br>
+        <strong>Email:</strong> drts@example.com<br>
+        <strong>Password:</strong> password123
+      </p>
+    </div>
+
+    <div class="credentials">
+      <h3>🔑 Login Credentials:</h3>
+      <code>Email: drts@example.com</code>
+      <code>Password: password123</code>
+    </div>
+
+    <button id="btnRegister" class="btn btn-primary" onclick="registerUser()">
+      ✨ Register User Sekarang
+    </button>
+
+    <button class="btn btn-secondary" onclick="window.location.href='auth/login.html'">
+      🔐 Ke Halaman Login
+    </button>
+
+    <div id="status" class="status"></div>
+
+    <div class="steps">
+      <h3 style="margin-bottom: 15px; color: #333;">Langkah Selanjutnya:</h3>
+      
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h4>Disable Email Confirmation</h4>
+          <p>Buka Supabase Dashboard dan disable email confirmation</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h4>Klik "Register User Sekarang"</h4>
+          <p>Tunggu beberapa detik sampai proses selesai</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h4>Login dengan Credentials</h4>
+          <p>Gunakan email dan password di atas untuk login</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h4>Test Sprint 2 Features</h4>
+          <p>Test fitur Kunjungan TS dan verify permissions</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/auth/auth-store.js"></script>
+  <script src="js/auth/auth-service.js"></script>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const btnRegister = document.getElementById('btnRegister');
+
+    function showStatus(type, title, message) {
+      statusEl.className = `status ${type}`;
+      statusEl.innerHTML = `
+        ${type === 'loading' ? '<div class="spinner"></div>' : ''}
+        <h4>${title}</h4>
+        <p>${message}</p>
+      `;
+    }
+
+    async function registerUser() {
+      try {
+        // Disable button
+        btnRegister.disabled = true;
+        btnRegister.textContent = '⏳ Sedang mendaftar...';
+
+        // Show loading
+        showStatus('loading', '⏳ Mendaftar user...', 'Tunggu beberapa detik...');
+
+        // Register user
+        const result = await AuthService.register({
+          email: 'drts@example.com',
+          password: 'password123',
+          nama: 'Drh. Rahmat S',
+          role: 'ts',
+          kandangId: null
+        });
+
+        if (result.success) {
+          // Success
+          showStatus(
+            'success',
+            '✅ Registrasi Berhasil!',
+            `
+              User berhasil dibuat dengan data:<br><br>
+              <strong>User ID:</strong> ${result.user.id}<br>
+              <strong>Email:</strong> ${result.user.email}<br>
+              <strong>Nama:</strong> Drh. Rahmat S<br>
+              <strong>Role:</strong> TS<br><br>
+              Silakan login dengan credentials di atas.<br>
+              <a href="auth/login.html" style="color: #667eea; font-weight: 600;">Klik di sini untuk login →</a>
+            `
+          );
+
+          // Change button
+          btnRegister.textContent = '✅ User Sudah Dibuat';
+          btnRegister.style.background = '#28a745';
+
+          // Auto redirect after 3 seconds
+          setTimeout(() => {
+            window.location.href = 'auth/login.html';
+          }, 3000);
+
+        } else {
+          // Error
+          let errorMessage = result.error || 'Unknown error';
+          let troubleshooting = '';
+
+          if (errorMessage.includes('Email not confirmed')) {
+            troubleshooting = '<br><br><strong>Solution:</strong> Disable email confirmation di Supabase Dashboard.';
+          } else if (errorMessage.includes('already registered')) {
+            troubleshooting = '<br><br><strong>Solution:</strong> User sudah ada, langsung login saja.';
+            setTimeout(() => {
+              window.location.href = 'auth/login.html';
+            }, 2000);
+          } else if (errorMessage.includes('invalid')) {
+            troubleshooting = '<br><br><strong>Solution:</strong> Gunakan email dengan domain valid (@example.com, @gmail.com).';
+          }
+
+          showStatus(
+            'error',
+            '❌ Registrasi Gagal',
+            `${errorMessage}${troubleshooting}`
+          );
+
+          // Re-enable button
+          btnRegister.disabled = false;
+          btnRegister.textContent = '🔄 Coba Lagi';
+        }
+
+      } catch (error) {
+        console.error('Registration error:', error);
+        showStatus(
+          'error',
+          '❌ Error',
+          `Terjadi kesalahan: ${error.message}<br><br>Cek browser console untuk detail.`
+        );
+
+        // Re-enable button
+        btnRegister.disabled = false;
+        btnRegister.textContent = '🔄 Coba Lagi';
+      }
+    }
+
+    // Check if already logged in
+    window.addEventListener('load', async () => {
+      const session = await sb.auth.getSession();
+      if (session.data.session) {
+        showStatus(
+          'success',
+          '✅ Sudah Login',
+          `Anda sudah login sebagai: ${session.data.session.user.email}<br><br><a href="index.html" style="color: #667eea; font-weight: 600;">Ke Dashboard →</a>`
+        );
+        btnRegister.disabled = true;
+        btnRegister.textContent = '✅ Sudah Login';
+      }
+    });
+  </script>
+</body>
+</html>

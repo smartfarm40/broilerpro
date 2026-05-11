@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FCR Calculator - BroilerTrack</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 30px;
+      padding: 25px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 15px;
+      display: none;
+    }
+
+    .result.show {
+      display: block;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .result-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .status-badge {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-excellent {
+      background: #10b981;
+      color: white;
+    }
+
+    .status-good {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .status-fair {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .status-poor {
+      background: #ef4444;
+      color: white;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .metric:last-child {
+      border-bottom: none;
+    }
+
+    .metric-label {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .metric-value {
+      color: #333;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .fcr-big {
+      text-align: center;
+      margin: 20px 0;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+    }
+
+    .fcr-number {
+      font-size: 48px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .fcr-label {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .message {
+      margin-top: 15px;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      color: #555;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #667eea;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #dc2626;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🐔 FCR Calculator</h1>
+    <p class="subtitle">Hitung Feed Conversion Ratio untuk evaluasi efisiensi pakan</p>
+
+    <form id="fcrForm">
+      <div class="form-group">
+        <label for="kandang">Pilih Kandang</label>
+        <select id="kandang" required>
+          <option value="">-- Pilih Kandang --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="tanggalMulai">Tanggal Mulai (Opsional)</label>
+        <input type="date" id="tanggalMulai">
+      </div>
+
+      <div class="form-group">
+        <label for="tanggalAkhir">Tanggal Akhir (Opsional)</label>
+        <input type="date" id="tanggalAkhir">
+      </div>
+
+      <button type="submit" id="calculateBtn">
+        Hitung FCR
+      </button>
+    </form>
+
+    <div class="loading" id="loading" style="display: none;">
+      <div class="spinner"></div>
+      <p>Menghitung FCR...</p>
+    </div>
+
+    <div class="error" id="error"></div>
+
+    <div class="result" id="result">
+      <div class="result-header">
+        <div class="result-title">Hasil Perhitungan</div>
+        <div class="status-badge" id="statusBadge"></div>
+      </div>
+
+      <div class="fcr-big">
+        <div class="fcr-number" id="fcrNumber">0.000</div>
+        <div class="fcr-label">Feed Conversion Ratio</div>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">Total Pakan</span>
+        <span class="metric-value" id="totalPakan">0 kg</span>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">Total Berat Panen</span>
+        <span class="metric-value" id="totalBerat">0 kg</span>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">Jumlah Hari</span>
+        <span class="metric-value" id="jumlahHari">0 hari</span>
+      </div>
+
+      <div class="message" id="message"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script>
+    const { supabase, EdgeFunctions, DB } = window.SupabaseClient;
+
+    // Load kandangs on page load
+    async function loadKandangs() {
+      try {
+        const kandangs = await DB.getActiveKandangs();
+        const select = document.getElementById('kandang');
+        
+        kandangs.forEach(k => {
+          const option = document.createElement('option');
+          option.value = k.id;
+          option.textContent = `${k.name} (${k.doc || 0} ekor)`;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading kandangs:', error);
+        showError('Gagal memuat data kandang');
+      }
+    }
+
+    // Handle form submission
+    document.getElementById('fcrForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const kandangId = document.getElementById('kandang').value;
+      const tanggalMulai = document.getElementById('tanggalMulai').value || null;
+      const tanggalAkhir = document.getElementById('tanggalAkhir').value || null;
+
+      if (!kandangId) {
+        showError('Pilih kandang terlebih dahulu');
+        return;
+      }
+
+      // Show loading
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('result').classList.remove('show');
+      document.getElementById('error').classList.remove('show');
+      document.getElementById('calculateBtn').disabled = true;
+
+      try {
+        const data = await EdgeFunctions.calculateFCR(kandangId, tanggalMulai, tanggalAkhir);
+        displayResult(data);
+      } catch (error) {
+        console.error('Error calculating FCR:', error);
+        showError('Gagal menghitung FCR. Pastikan ada data panen.');
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('calculateBtn').disabled = false;
+      }
+    });
+
+    function displayResult(data) {
+      document.getElementById('fcrNumber').textContent = data.fcr.toFixed(3);
+      document.getElementById('totalPakan').textContent = `${data.total_pakan_kg.toFixed(2)} kg`;
+      document.getElementById('totalBerat').textContent = `${data.total_berat_panen_kg.toFixed(2)} kg`;
+      document.getElementById('jumlahHari').textContent = `${data.jumlah_hari} hari`;
+      document.getElementById('message').textContent = data.message;
+
+      const statusBadge = document.getElementById('statusBadge');
+      statusBadge.textContent = data.status;
+      statusBadge.className = 'status-badge status-' + data.status;
+
+      document.getElementById('result').classList.add('show');
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.classList.add('show');
+    }
+
+    // Initialize
+    loadKandangs();
+  </script>
+</body>
+</html>

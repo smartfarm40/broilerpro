@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug & Fix - BroilerTrack</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: monospace; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+    h1 { color: #4fc3f7; margin-bottom: 20px; font-size: 20px; }
+    h2 { color: #81c784; margin: 20px 0 10px; font-size: 16px; }
+    .card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .btn { display: inline-block; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-family: monospace; margin: 4px; }
+    .btn-blue   { background: #1565c0; color: white; }
+    .btn-green  { background: #2e7d32; color: white; }
+    .btn-red    { background: #c62828; color: white; }
+    .btn-orange { background: #e65100; color: white; }
+    .btn:hover  { opacity: 0.85; }
+    .log { background: #0d0d1a; border: 1px solid #333; border-radius: 4px; padding: 12px; margin-top: 10px; min-height: 60px; max-height: 300px; overflow-y: auto; font-size: 13px; line-height: 1.6; }
+    .ok   { color: #81c784; }
+    .err  { color: #ef9a9a; }
+    .warn { color: #ffcc02; }
+    .info { color: #4fc3f7; }
+    input { background: #0d0d1a; border: 1px solid #444; color: #e0e0e0; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 14px; width: 100%; margin: 4px 0; }
+    label { font-size: 13px; color: #aaa; display: block; margin-top: 8px; }
+  </style>
+</head>
+<body>
+<h1>🔧 BroilerTrack Debug & Fix</h1>
+
+<!-- Step 1: Clear Cache -->
+<div class="card">
+  <h2>Step 1: Clear Service Worker Cache</h2>
+  <p style="font-size:13px;color:#aaa;margin-bottom:10px">Hapus cache lama agar browser memuat file terbaru</p>
+  <button class="btn btn-red" onclick="clearSW()">🗑️ Clear Cache & Reload</button>
+  <div class="log" id="log-sw">Klik tombol untuk clear cache...</div>
+</div>
+
+<!-- Step 2: Test Supabase -->
+<div class="card">
+  <h2>Step 2: Test Koneksi Supabase</h2>
+  <button class="btn btn-blue" onclick="testSupabase()">🔌 Test Koneksi</button>
+  <div class="log" id="log-supabase">Klik tombol untuk test...</div>
+</div>
+
+<!-- Step 3: Register User -->
+<div class="card">
+  <h2>Step 3: Register User TS</h2>
+  <label>Email:</label>
+  <input type="email" id="reg-email" value="drts@example.com" />
+  <label>Password:</label>
+  <input type="password" id="reg-password" value="password123" />
+  <label>Nama:</label>
+  <input type="text" id="reg-nama" value="Drh. Rahmat S" />
+  <div style="margin-top:10px">
+    <button class="btn btn-green" onclick="registerUser()">✨ Register User</button>
+    <button class="btn btn-orange" onclick="checkExistingUser()">🔍 Cek User Existing</button>
+  </div>
+  <div class="log" id="log-register">Klik tombol untuk register...</div>
+</div>
+
+<!-- Step 4: Test Login -->
+<div class="card">
+  <h2>Step 4: Test Login</h2>
+  <label>Email:</label>
+  <input type="email" id="login-email" value="drts@example.com" />
+  <label>Password:</label>
+  <input type="password" id="login-password" value="password123" />
+  <div style="margin-top:10px">
+    <button class="btn btn-green" onclick="testLogin()">🔐 Test Login</button>
+    <button class="btn btn-blue" onclick="goToApp()">🚀 Buka Aplikasi</button>
+  </div>
+  <div class="log" id="log-login">Klik tombol untuk test login...</div>
+</div>
+
+<!-- Step 5: Check Auth State -->
+<div class="card">
+  <h2>Step 5: Check Auth State</h2>
+  <button class="btn btn-blue" onclick="checkAuth()">👤 Check Session</button>
+  <button class="btn btn-red" onclick="logout()">🚪 Logout</button>
+  <div class="log" id="log-auth">Klik tombol untuk check...</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL = 'https://rsqbxzhrainejnbxnvfw.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzcWJ4emhyYWluZWpuYnhudmZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDY5MjAsImV4cCI6MjA5MzgyMjkyMH0.0o25fsGcqHjND5_m0r0WOUQsl4go-7LX4H3VCdsZ4bc';
+
+  const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true }
+  });
+
+  function log(id, msg, type = 'info') {
+    const el = document.getElementById(id);
+    const line = document.createElement('div');
+    line.className = type;
+    line.textContent = new Date().toLocaleTimeString() + ' › ' + msg;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function clearLog(id) {
+    document.getElementById(id).innerHTML = '';
+  }
+
+  // ── Step 1: Clear SW Cache ──────────────────────────────────────────────────
+  async function clearSW() {
+    clearLog('log-sw');
+    log('log-sw', 'Menghapus service worker...', 'info');
+
+    try {
+      // Unregister all service workers
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        await reg.unregister();
+        log('log-sw', 'SW unregistered: ' + reg.scope, 'ok');
+      }
+
+      // Clear all caches
+      const keys = await caches.keys();
+      for (const key of keys) {
+        await caches.delete(key);
+        log('log-sw', 'Cache deleted: ' + key, 'ok');
+      }
+
+      if (regs.length === 0 && keys.length === 0) {
+        log('log-sw', 'Tidak ada SW atau cache yang perlu dihapus', 'warn');
+      }
+
+      log('log-sw', '✅ Selesai! Reload halaman dalam 2 detik...', 'ok');
+      setTimeout(() => location.reload(true), 2000);
+    } catch (e) {
+      log('log-sw', '❌ Error: ' + e.message, 'err');
+    }
+  }
+
+  // ── Step 2: Test Supabase ───────────────────────────────────────────────────
+  async function testSupabase() {
+    clearLog('log-supabase');
+    log('log-supabase', 'Testing Supabase connection...', 'info');
+
+    try {
+      // Test basic connection
+      const { data, error } = await _sb.from('profiles').select('count').limit(1);
+      if (error) {
+        log('log-supabase', '❌ DB Error: ' + error.message, 'err');
+      } else {
+        log('log-supabase', '✅ Database connection OK', 'ok');
+      }
+
+      // Test auth
+      const { data: session } = await _sb.auth.getSession();
+      if (session.session) {
+        log('log-supabase', '✅ Auth: Sudah login sebagai ' + session.session.user.email, 'ok');
+      } else {
+        log('log-supabase', '⚠️ Auth: Belum login (normal jika belum register)', 'warn');
+      }
+
+      log('log-supabase', '✅ Supabase URL: ' + SUPABASE_URL, 'ok');
+    } catch (e) {
+      log('log-supabase', '❌ Exception: ' + e.message, 'err');
+    }
+  }
+
+  // ── Step 3: Register ────────────────────────────────────────────────────────
+  async function registerUser() {
+    clearLog('log-register');
+    const email    = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const nama     = document.getElementById('reg-nama').value.trim();
+
+    log('log-register', 'Mendaftar user: ' + email, 'info');
+
+    try {
+      const { data, error } = await _sb.auth.signUp({
+        email,
+        password,
+        options: { data: { nama, role: 'ts', kandang_id: null } }
+      });
+
+      if (error) {
+        log('log-register', '❌ Error: ' + error.message, 'err');
+
+        if (error.message.includes('already registered')) {
+          log('log-register', '💡 User sudah ada — coba login langsung', 'warn');
+        } else if (error.message.includes('email')) {
+          log('log-register', '💡 Coba email lain: user@gmail.com', 'warn');
+        }
+        return;
+      }
+
+      if (data.user) {
+        log('log-register', '✅ User dibuat! ID: ' + data.user.id, 'ok');
+        log('log-register', '✅ Email: ' + data.user.email, 'ok');
+
+        if (!data.session) {
+          log('log-register', '⚠️ Email confirmation diperlukan!', 'warn');
+          log('log-register', '💡 Disable email confirmation di Supabase Dashboard', 'warn');
+          log('log-register', '   Dashboard > Auth > Settings > Email Auth', 'warn');
+        } else {
+          log('log-register', '✅ Session aktif — bisa langsung login!', 'ok');
+
+          // Buat profile
+          const { error: pErr } = await _sb.from('profiles').upsert({
+            id: data.user.id, nama, role: 'ts', kandang_id: null
+          });
+          if (pErr) {
+            log('log-register', '⚠️ Profile error: ' + pErr.message, 'warn');
+          } else {
+            log('log-register', '✅ Profile dibuat!', 'ok');
+          }
+        }
+      }
+    } catch (e) {
+      log('log-register', '❌ Exception: ' + e.message, 'err');
+    }
+  }
+
+  async function checkExistingUser() {
+    clearLog('log-register');
+    log('log-register', 'Cek user di database...', 'info');
+    try {
+      const { data, error } = await _sb.from('profiles').select('id, nama, role').limit(10);
+      if (error) {
+        log('log-register', '❌ Error: ' + error.message, 'err');
+      } else if (!data || data.length === 0) {
+        log('log-register', '⚠️ Tidak ada profile di database', 'warn');
+        log('log-register', '💡 Perlu register user dulu', 'warn');
+      } else {
+        log('log-register', '✅ Ditemukan ' + data.length + ' profile:', 'ok');
+        data.forEach(p => {
+          log('log-register', '   • ' + p.nama + ' (' + p.role + ') — ' + p.id.substring(0,8) + '...', 'info');
+        });
+      }
+    } catch (e) {
+      log('log-register', '❌ Exception: ' + e.message, 'err');
+    }
+  }
+
+  // ── Step 4: Test Login ──────────────────────────────────────────────────────
+  async function testLogin() {
+    clearLog('log-login');
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    log('log-login', 'Login sebagai: ' + email, 'info');
+
+    try {
+      const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        log('log-login', '❌ Error: ' + error.message, 'err');
+
+        if (error.message.includes('Invalid login credentials')) {
+          log('log-login', '💡 Email atau password salah', 'warn');
+          log('log-login', '💡 Atau user belum terdaftar — register dulu (Step 3)', 'warn');
+        } else if (error.message.includes('Email not confirmed')) {
+          log('log-login', '💡 Email belum dikonfirmasi', 'warn');
+          log('log-login', '💡 Disable email confirmation di Supabase Dashboard', 'warn');
+        }
+        return;
+      }
+
+      log('log-login', '✅ Login berhasil!', 'ok');
+      log('log-login', '✅ User ID: ' + data.user.id, 'ok');
+      log('log-login', '✅ Email: ' + data.user.email, 'ok');
+
+      // Load profile
+      const { data: profile } = await _sb.from('profiles').select('*').eq('id', data.user.id).single();
+      if (profile) {
+        log('log-login', '✅ Profile: ' + profile.nama + ' (' + profile.role + ')', 'ok');
+      } else {
+        log('log-login', '⚠️ Profile belum ada — akan dibuat otomatis saat buka app', 'warn');
+      }
+
+      log('log-login', '', 'info');
+      log('log-login', '🚀 Siap! Klik "Buka Aplikasi" untuk masuk', 'ok');
+    } catch (e) {
+      log('log-login', '❌ Exception: ' + e.message, 'err');
+    }
+  }
+
+  function goToApp() {
+    window.location.href = 'index.html';
+  }
+
+  // ── Step 5: Check Auth ──────────────────────────────────────────────────────
+  async function checkAuth() {
+    clearLog('log-auth');
+    log('log-auth', 'Checking session...', 'info');
+
+    try {
+      const { data: { session } } = await _sb.auth.getSession();
+
+      if (!session) {
+        log('log-auth', '⚠️ Tidak ada session aktif', 'warn');
+        log('log-auth', '💡 Login dulu di Step 4', 'warn');
+        return;
+      }
+
+      log('log-auth', '✅ Session aktif!', 'ok');
+      log('log-auth', '   User ID: ' + session.user.id, 'info');
+      log('log-auth', '   Email: ' + session.user.email, 'info');
+      log('log-auth', '   Expires: ' + new Date(session.expires_at * 1000).toLocaleString(), 'info');
+
+      const { data: profile } = await _sb.from('profiles').select('*').eq('id', session.user.id).single();
+      if (profile) {
+        log('log-auth', '   Nama: ' + profile.nama, 'info');
+        log('log-auth', '   Role: ' + profile.role, 'info');
+      }
+    } catch (e) {
+      log('log-auth', '❌ Exception: ' + e.message, 'err');
+    }
+  }
+
+  async function logout() {
+    clearLog('log-auth');
+    log('log-auth', 'Logout...', 'info');
+    try {
+      await _sb.auth.signOut();
+      log('log-auth', '✅ Logout berhasil', 'ok');
+    } catch (e) {
+      log('log-auth', '❌ Error: ' + e.message, 'err');
+    }
+  }
+
+  // Auto-run connection test on load
+  window.addEventListener('load', () => {
+    setTimeout(testSupabase, 500);
+  });
+</script>
+</body>
+</html>

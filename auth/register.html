@@ -1,0 +1,279 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#3B82F6" />
+  <title>Daftar — BroilerTrack</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body data-theme="light">
+
+<div class="auth-page">
+
+  <div class="auth-header">
+    <div class="auth-logo"><span class="material-icons-round">egg_alt</span></div>
+    <h1 class="auth-app-name">BroilerTrack</h1>
+    <p class="auth-tagline">Daftarkan akun Anda</p>
+  </div>
+
+  <!-- Step indicator -->
+  <div class="auth-steps">
+    <div class="auth-step active" id="step-dot-1">
+      <div class="auth-step-dot">1</div>
+      <span>Akun</span>
+    </div>
+    <div class="auth-step-line"></div>
+    <div class="auth-step" id="step-dot-2">
+      <div class="auth-step-dot">2</div>
+      <span>Profil</span>
+    </div>
+    <div class="auth-step-line"></div>
+    <div class="auth-step" id="step-dot-3">
+      <div class="auth-step-dot">3</div>
+      <span>Selesai</span>
+    </div>
+  </div>
+
+  <!-- Step 1: Email & Password -->
+  <div class="auth-card" id="step-1">
+    <h2 class="auth-card-title">Buat Akun</h2>
+    <p class="auth-card-sub">Masukkan email dan password Anda</p>
+    <div class="auth-form">
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">email</span>
+          <input type="email" id="reg-email" class="auth-input" placeholder="nama@email.com"
+                 autocomplete="email" />
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">lock</span>
+          <input type="password" id="reg-password" class="auth-input" placeholder="Min. 8 karakter"
+                 oninput="checkPasswordStrength(this.value)" />
+          <button class="auth-eye-btn" onclick="togglePw('reg-password', this)" tabindex="-1">
+            <span class="material-icons-round">visibility</span>
+          </button>
+        </div>
+        <div class="pw-strength-bar">
+          <div class="pw-strength-fill" id="pw-strength-fill"></div>
+        </div>
+        <div class="pw-strength-label" id="pw-strength-label"></div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Konfirmasi Password</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">lock_outline</span>
+          <input type="password" id="reg-confirm" class="auth-input" placeholder="Ulangi password" />
+        </div>
+      </div>
+      <div class="auth-error hidden" id="step1-error"></div>
+      <button class="auth-btn auth-btn--primary" onclick="goStep2()">
+        Lanjut <span class="material-icons-round">arrow_forward</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Profil -->
+  <div class="auth-card hidden" id="step-2">
+    <button class="auth-back-btn" onclick="goStep(1)">
+      <span class="material-icons-round">arrow_back</span>
+    </button>
+    <h2 class="auth-card-title">Lengkapi Profil</h2>
+    <p class="auth-card-sub">Data ini akan ditampilkan di aplikasi</p>
+    <div class="auth-form">
+      <div class="auth-field">
+        <label class="auth-label">Nama Lengkap</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">person</span>
+          <input type="text" id="reg-nama" class="auth-input" placeholder="Nama lengkap Anda" />
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Role / Jabatan</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">badge</span>
+          <select id="reg-role" class="auth-input auth-select">
+            <option value="owner">Pemilik (Owner)</option>
+            <option value="ts">Technical Service (TS)</option>
+            <option value="kandang" selected>Petugas Kandang</option>
+            <option value="staff">Staff</option>
+          </select>
+        </div>
+      </div>
+      <div class="auth-error hidden" id="step2-error"></div>
+      <button class="auth-btn auth-btn--primary" onclick="doRegister()" id="reg-btn">
+        <span class="material-icons-round">check_circle</span>
+        Daftar Sekarang
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 3: Sukses -->
+  <div class="auth-card hidden" id="step-3">
+    <div class="auth-success-icon">
+      <span class="material-icons-round">celebration</span>
+    </div>
+    <h2 class="auth-card-title">Akun Berhasil Dibuat!</h2>
+    <p class="auth-card-sub" id="success-msg">Selamat datang di BroilerTrack</p>
+    <div class="auth-success-info" id="success-info"></div>
+    <div class="auth-info-box hidden" id="confirm-email-notice"
+         style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--primary)">
+      <span class="material-icons-round" style="font-size:16px;vertical-align:middle;margin-right:4px">info</span>
+      Cek email Anda untuk konfirmasi akun sebelum login.
+    </div>
+    <button class="auth-btn auth-btn--primary" onclick="window.location.href='login.html'">
+      <span class="material-icons-round">login</span>
+      Masuk Sekarang
+    </button>
+  </div>
+
+  <p class="auth-switch" style="margin-top:16px">
+    Sudah punya akun? <a href="login.html" class="auth-link">Masuk di sini</a>
+  </p>
+
+</div>
+
+<div id="auth-toast" class="toast hidden"></div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/auth/auth-store.js"></script>
+<script src="../js/auth/auth-service.js"></script>
+<script>
+  // Redirect jika sudah login
+  (async () => {
+    const loggedIn = await AUTH.init();
+    if (loggedIn) window.location.href = '../index.html';
+  })();
+
+  // Pre-fill dari URL params (undangan)
+  window.addEventListener('load', () => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('email')) document.getElementById('reg-email').value = params.get('email');
+    if (params.get('role'))  document.getElementById('reg-role').value  = params.get('role');
+  });
+
+  function goStep2() {
+    const email    = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const confirm  = document.getElementById('reg-confirm').value;
+    const errEl    = document.getElementById('step1-error');
+
+    errEl.classList.add('hidden');
+
+    if (!email || !email.includes('@')) {
+      errEl.textContent = 'Masukkan email yang valid';
+      errEl.classList.remove('hidden'); return;
+    }
+    if (password.length < 8) {
+      errEl.textContent = 'Password minimal 8 karakter';
+      errEl.classList.remove('hidden'); return;
+    }
+    if (password !== confirm) {
+      errEl.textContent = 'Password tidak cocok';
+      errEl.classList.remove('hidden'); return;
+    }
+    goStep(2);
+  }
+
+  function goStep(n) {
+    [1, 2, 3].forEach(i => {
+      document.getElementById('step-' + i).classList.toggle('hidden', i !== n);
+      const dot = document.getElementById('step-dot-' + i);
+      dot.classList.toggle('active', i <= n);
+      dot.classList.toggle('done',   i < n);
+    });
+  }
+
+  async function doRegister() {
+    const email    = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const nama     = document.getElementById('reg-nama').value.trim();
+    const role     = document.getElementById('reg-role').value;
+    const errEl    = document.getElementById('step2-error');
+    const btn      = document.getElementById('reg-btn');
+
+    errEl.classList.add('hidden');
+
+    if (!nama) {
+      errEl.textContent = 'Nama lengkap wajib diisi';
+      errEl.classList.remove('hidden'); return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons-round spin">refresh</span> Mendaftar...';
+
+    const result = await AuthService.register({ email, password, nama, role });
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round">check_circle</span> Daftar Sekarang';
+
+    if (result.error) {
+      errEl.textContent = result.error;
+      errEl.classList.remove('hidden'); return;
+    }
+
+    // Sukses
+    document.getElementById('success-msg').textContent = 'Selamat datang, ' + nama + '!';
+    document.getElementById('success-info').innerHTML = `
+      <div class="success-row">
+        <span class="material-icons-round">email</span>
+        <span>${email}</span>
+      </div>
+      <div class="success-row">
+        <span class="material-icons-round">badge</span>
+        <span>Role: ${roleLabel(role)}</span>
+      </div>
+    `;
+
+    // Tampilkan notice konfirmasi email jika perlu
+    if (result.needsEmailConfirm) {
+      document.getElementById('confirm-email-notice').classList.remove('hidden');
+    }
+
+    goStep(3);
+  }
+
+  function roleLabel(r) {
+    return { owner:'Pemilik', ts:'Technical Service', kandang:'Petugas Kandang', staff:'Staff' }[r] || r;
+  }
+
+  function checkPasswordStrength(pw) {
+    const fill  = document.getElementById('pw-strength-fill');
+    const label = document.getElementById('pw-strength-label');
+    let score = 0;
+    if (pw.length >= 8)           score++;
+    if (pw.length >= 12)          score++;
+    if (/[A-Z]/.test(pw))         score++;
+    if (/[0-9]/.test(pw))         score++;
+    if (/[^A-Za-z0-9]/.test(pw))  score++;
+    const levels = [
+      { pct:'20%', color:'#EF4444', label:'Sangat lemah' },
+      { pct:'40%', color:'#F97316', label:'Lemah' },
+      { pct:'60%', color:'#FBBF24', label:'Cukup' },
+      { pct:'80%', color:'#10B981', label:'Kuat' },
+      { pct:'100%',color:'#10B981', label:'Sangat kuat' },
+    ];
+    const lv = levels[Math.min(score, 4)];
+    fill.style.width      = pw ? lv.pct : '0';
+    fill.style.background = lv.color;
+    label.textContent     = pw ? lv.label : '';
+    label.style.color     = lv.color;
+  }
+
+  function togglePw(id, btn) {
+    const inp  = document.getElementById(id);
+    const show = inp.type === 'password';
+    inp.type   = show ? 'text' : 'password';
+    btn.querySelector('.material-icons-round').textContent = show ? 'visibility_off' : 'visibility';
+  }
+</script>
+</body>
+</html>

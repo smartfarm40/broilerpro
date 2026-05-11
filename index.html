@@ -1,0 +1,1839 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#3B82F6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="BroilerTrack" />
+  <title>BroilerTrack - Laporan Harian Ayam Broiler</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="auth/auth.css" />
+  <link rel="stylesheet" href="css/leaflet.min.css" />
+</head>
+<body data-theme="light">
+
+  <!-- Splash Screen -->
+  <div id="splash" class="splash">
+    <div class="splash-content">
+      <div class="splash-icon"><span class="material-icons-round">egg_alt</span></div>
+      <h1>BroilerTrack</h1>
+      <p>Manajemen Peternakan Ayam Broiler</p>
+    </div>
+  </div>
+
+  <!-- App Shell -->
+  <div id="app" class="app hidden">
+
+    <!-- Pages -->
+    <main id="main-content" class="main-content">
+
+      <!-- ===== HALAMAN DASHBOARD ===== -->
+      <section id="page-dashboard" class="page active">
+        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="headline-small">Ringkasan Kandang</h2>
+                <p class="body-small opacity-80">Batch #402 &bull; Cobb 500</p>
+              </div>
+              <div class="avatar-circle" onclick="navigateTo('settings')" style="cursor:pointer" title="Profil">
+                <span class="material-icons-round" id="header-avatar-icon">person</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-body">
+          <!-- Status Fase -->
+          <div class="phase-row">
+            <div class="phase-node">
+              <div class="phase-icon"><span class="material-icons-round">wb_sunny</span></div>
+              <span class="phase-label">Brooding</span>
+            </div>
+            <div class="phase-line"></div>
+            <div class="phase-node active">
+              <div class="phase-icon"><span class="material-icons-round">trending_up</span></div>
+              <span class="phase-label">Pertumbuhan</span>
+            </div>
+            <div class="phase-line"></div>
+            <div class="phase-node">
+              <div class="phase-icon"><span class="material-icons-round">check_circle_outline</span></div>
+              <span class="phase-label">Finishing</span>
+            </div>
+          </div>
+
+          <!-- KPI Cards -->
+          <div class="kpi-grid">
+            <div class="kpi-card" style="--tint: rgba(59,130,246,0.12)">
+              <div class="kpi-icon" style="color:#3B82F6"><span class="material-icons-round">analytics</span></div>
+              <div class="kpi-value">1.42</div>
+              <div class="kpi-label">FCR</div>
+              <div class="kpi-trend warning">+0.02 vs target</div>
+            </div>
+            <div class="kpi-card" style="--tint: rgba(239,68,68,0.12)">
+              <div class="kpi-icon" style="color:#EF4444"><span class="material-icons-round">favorite</span></div>
+              <div class="kpi-value">1.2%</div>
+              <div class="kpi-label">Mortalitas</div>
+              <div class="kpi-trend success">-0.1% sehat</div>
+            </div>
+            <div class="kpi-card" style="--tint: rgba(16,185,129,0.12)">
+              <div class="kpi-icon" style="color:#10B981"><span class="material-icons-round">monitor_weight</span></div>
+              <div class="kpi-value" id="dash-avg-weight">980g</div>
+              <div class="kpi-label">Berat Rata-rata</div>
+              <div class="kpi-trend success">Sesuai target</div>
+            </div>
+            <div class="kpi-card" style="--tint: rgba(251,191,36,0.12)">
+              <div class="kpi-icon" style="color:#FBBF24"><span class="material-icons-round">calendar_today</span></div>
+              <div class="kpi-value" id="dash-day">Hari 24</div>
+              <div class="kpi-label">Umur</div>
+              <div class="kpi-trend">18 hari lagi</div>
+            </div>
+          </div>
+
+          <!-- Grafik Pertumbuhan Mini -->
+          <div class="section-header">
+            <span class="title-medium bold">Kurva Pertumbuhan</span>
+            <span class="label-small secondary-text">Berat (g) vs Hari</span>
+          </div>
+          <div class="chart-container surface-card">
+            <canvas id="dashboardChart"></canvas>
+          </div>
+
+          <!-- Aktivitas Terkini -->
+          <div class="section-header">
+            <span class="title-medium bold">Aktivitas Terkini</span>
+            <button class="link-btn" onclick="navigateTo('daily')">Lihat Semua</button>
+          </div>
+          <div class="activity-list" id="recent-activity"></div>
+        </div>
+      </section>
+
+      <!-- ===== HALAMAN LAPORAN HARIAN ===== -->
+      <section id="page-daily" class="page">
+        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="display-small" id="daily-day-title">Hari 24</h2>
+                <p class="title-medium opacity-90">BroilerTrack Laporan Harian</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress Hari -->
+        <div class="day-progress-wrap">
+          <div class="day-progress-row" id="day-progress-nodes"></div>
+          <div class="divider-line"></div>
+        </div>
+
+        <div class="page-body">
+          <!-- Form Input -->
+          <div class="step-card step-card--deplesi">
+            <img src="icons/ayam.svg" class="deplesi-icon" alt="Ayam" />
+            <div class="deplesi-content">
+              <div class="deplesi-title">Deplesi</div>
+              <div class="deplesi-row">
+                <input type="number" id="input-mortality" class="deplesi-input" placeholder="mati" min="0" />
+                <span class="deplesi-unit">ekor</span>
+                <input type="number" id="input-culling" class="deplesi-input" placeholder="afkir" min="0" />
+                <span class="deplesi-unit">ekor</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-card step-card--feed">
+            <img src="icons/karung-pakan.svg" class="pakan-icon" alt="Karung Pakan" />
+            <div class="pakan-content">
+            <div class="pakan-title">Pakan</div>
+            <div class="pakan-row">
+              <select id="input-feed-code" class="pakan-select" onchange="calcFeedTotal()">
+                <option value="BR-1">BR-1</option>
+                <option value="BR-2">BR-2</option>
+                <option value="BR-3">BR-3</option>
+                <option value="511">511</option>
+                <option value="512">512</option>
+                <option value="594">594</option>
+              </select>
+              <input type="number" id="input-feed-am" class="pakan-input" placeholder="pagi" min="0" step="0.5" oninput="calcFeedTotal()" />
+              <span class="pakan-unit">kg</span>
+              <input type="number" id="input-feed-pm" class="pakan-input" placeholder="sore" min="0" step="0.5" oninput="calcFeedTotal()" />
+              <span class="pakan-unit">kg</span>
+            </div>
+            <div class="pakan-bottom-row">
+              <div class="pakan-std-wrap">
+                <span class="pakan-bottom-label">Std :</span>
+                <span class="pakan-std-value" id="feed-std-display">-</span>
+                <span class="pakan-bottom-unit">kg</span>
+              </div>
+              <div class="pakan-total-wrap">
+                <span class="pakan-bottom-label">Total :</span>
+                <span class="pakan-total-line"></span>
+                <span class="pakan-total-value" id="feed-total-display">0</span>
+                <span class="pakan-bottom-unit">kg</span>
+              </div>
+            </div>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-icon-wrap" style="background:#DBEAFE">
+              <span class="material-icons-round" style="color:#3B82F6">water_drop</span>
+            </div>
+            <div class="step-info">
+              <div class="title-small bold">Konsumsi Air</div>
+            </div>
+            <div class="step-input-wrap">
+              <input type="number" id="input-water" class="step-input" placeholder="0" min="0" />
+              <span class="step-unit">Liter</span>
+            </div>
+          </div>
+
+          <div class="step-card step-card--timbang" onclick="openTimbang()">
+            <div class="step-icon-wrap" style="background:#D1FAE5">
+              <span class="material-icons-round" style="color:#10B981">monitor_weight</span>
+            </div>
+            <div class="step-info">
+              <div class="title-small bold">Timbang Berat Badan</div>
+              <div class="body-small secondary-text" id="timbang-summary-text">Belum ada data timbang</div>
+            </div>
+            <span class="material-icons-round secondary-text">chevron_right</span>
+          </div>
+
+          <!-- ===== CARD CHECK LIST ===== -->
+          <div class="checklist-card">
+            <div class="checklist-title">
+              <span class="material-icons-round" style="font-size:18px;color:#3B82F6">checklist</span>
+              Check List
+            </div>
+
+            <!-- Suhu -->
+            <div class="cl-row">
+              <span class="cl-label">Suhu</span>
+              <div class="cl-inputs">
+                <input type="number" id="cl-suhu" class="cl-input" placeholder="°C" step="0.1" min="0" max="50" />
+                <span class="cl-unit">°C</span>
+              </div>
+            </div>
+
+            <div class="cl-divider"></div>
+
+            <!-- Kipas -->
+            <div class="cl-row cl-row--wrap">
+              <span class="cl-label">Kipas</span>
+              <div class="cl-toggle-group">
+                <button class="cl-toggle active" id="cl-kipas-on"  onclick="clToggle('kipas','on')">Menyala</button>
+                <button class="cl-toggle"        id="cl-kipas-off" onclick="clToggle('kipas','off')">Mati</button>
+              </div>
+              <div class="cl-sub-inputs" id="cl-kipas-sub">
+                <div class="cl-sub-field">
+                  <span class="cl-sub-label">Jumlah</span>
+                  <input type="number" id="cl-kipas-qty" class="cl-input-sm" placeholder="0" min="0" />
+                  <span class="cl-unit">unit</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cl-divider"></div>
+
+            <!-- Inverter -->
+            <div class="cl-row cl-row--wrap">
+              <span class="cl-label">Inverter</span>
+              <div class="cl-toggle-group">
+                <button class="cl-toggle active" id="cl-inverter-on"  onclick="clToggle('inverter','on')">On</button>
+                <button class="cl-toggle"        id="cl-inverter-off" onclick="clToggle('inverter','off')">Off</button>
+              </div>
+              <div class="cl-sub-inputs" id="cl-inverter-sub">
+                <div class="cl-sub-field">
+                  <span class="cl-sub-label">Jumlah</span>
+                  <input type="number" id="cl-inverter-qty" class="cl-input-sm" placeholder="0" min="0" />
+                  <span class="cl-unit">unit</span>
+                </div>
+                <div class="cl-sub-field">
+                  <span class="cl-sub-label">Frekuensi</span>
+                  <input type="number" id="cl-inverter-hz" class="cl-input-sm" placeholder="0" min="0" max="60" />
+                  <span class="cl-unit">Hz</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cl-divider"></div>
+
+            <!-- Listrik & Genset -->
+            <div class="cl-row">
+              <span class="cl-label">Listrik PLN</span>
+              <div class="cl-toggle-group">
+                <button class="cl-toggle active" id="cl-pln-on"  onclick="clToggle('pln','on')">On</button>
+                <button class="cl-toggle"        id="cl-pln-off" onclick="clToggle('pln','off')">Off</button>
+              </div>
+            </div>
+            <div class="cl-row">
+              <span class="cl-label">Genset</span>
+              <div class="cl-toggle-group">
+                <button class="cl-toggle"        id="cl-genset-on"  onclick="clToggle('genset','on')">On</button>
+                <button class="cl-toggle active" id="cl-genset-off" onclick="clToggle('genset','off')">Off</button>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="obs-section">
+            <div class="title-small bold">Catatan Tambahan</div>
+            <textarea id="input-notes" class="obs-textarea" placeholder="Perilaku tidak biasa, suhu, dll."></textarea>
+          </div>
+
+          <!-- Tombol Aksi -->
+          <div class="daily-action-row">
+            <button class="daily-action-btn daily-action-btn--save" onclick="saveProgress()">
+              <span class="material-icons-round">save</span>
+              <span class="daily-action-label">Simpan</span>
+            </button>
+            <button class="daily-action-btn daily-action-btn--complete" id="btn-complete-day" onclick="completeDay()">
+              <span class="material-icons-round">check_circle</span>
+              <span class="daily-action-label" id="btn-complete-label">Selesaikan</span>
+            </button>
+          </div>
+
+          <!-- ===== HISTORI AKTIVITAS ===== -->
+          <div class="activity-history-card">
+            <div class="activity-history-title">
+              <span class="material-icons-round" style="font-size:16px;color:#3B82F6">history</span>
+              Histori Aktivitas
+            </div>
+            <div id="daily-activity-log" class="activity-history-list">
+              <div class="activity-history-empty">Belum ada aktivitas hari ini</div>
+            </div>
+          </div>
+
+          <div class="spacer-xxl"></div>
+        </div>
+      </section>
+
+      <!-- ===== HALAMAN MANAJEMEN KANDANG ===== -->
+      <section id="page-flock" class="page">
+        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="headline-medium bold">Kandang Saya</h2>
+                <p class="body-medium opacity-80">Kelola batch ayam Anda</p>
+              </div>
+              <div class="icon-btn-circle">
+                <span class="material-icons-round">inventory_2</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-mini">
+                <div class="title-large bold">03</div>
+                <div class="label-small opacity-90">Kandang Aktif</div>
+              </div>
+              <div class="stat-mini">
+                <div class="title-large bold">12</div>
+                <div class="label-small opacity-90">Total Batch</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-body">
+          <!-- Tab Filter -->
+          <div class="tab-row">
+            <div class="tab-group">
+              <button class="tab-btn active" onclick="switchFlockTab('active', this)">Aktif</button>
+              <button class="tab-btn" onclick="switchFlockTab('history', this)">Riwayat</button>
+            </div>
+            <button class="icon-btn-outline">
+              <span class="material-icons-round">filter_list</span>
+            </button>
+          </div>
+
+          <!-- Flock Cards -->
+          <div id="flock-list" class="flock-list"></div>
+
+          <!-- Tambah Kandang -->
+          <button class="btn btn-primary btn-full mt-lg" onclick="showAddFlockModal()">
+            <span class="material-icons-round">add</span>
+            Tambah Kandang Baru
+          </button>
+        </div>
+      </section>
+
+      <!-- ===== HALAMAN GRAFIK PERTUMBUHAN ===== -->
+      <section id="page-growth" class="page">
+        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="headline-medium bold">Analitik Pertumbuhan</h2>
+                <p class="title-small opacity-80">Batch #402 &bull; Hari 24</p>
+              </div>
+              <div class="badge-pill">
+                <span class="material-icons-round" style="font-size:16px">trending_up</span>
+                <span class="label-small bold">Sesuai Target</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-body">
+          <!-- KPI Stats -->
+          <div class="kpi-stat-row">
+            <div class="kpi-stat primary">
+              <div class="kpi-stat-value">1.42</div>
+              <div class="kpi-stat-label">FCR Saat Ini</div>
+            </div>
+            <div class="kpi-stat secondary">
+              <div class="kpi-stat-value">1.2kg</div>
+              <div class="kpi-stat-label">Berat Rata-rata</div>
+            </div>
+            <div class="kpi-stat error">
+              <div class="kpi-stat-value">0.8%</div>
+              <div class="kpi-stat-label">Mortalitas</div>
+            </div>
+          </div>
+
+          <!-- Chart Pertambahan Berat -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div class="chart-card-icon primary"><span class="material-icons-round">speed</span></div>
+              <div>
+                <div class="title-small bold">Pertambahan Berat</div>
+                <div class="label-small secondary-text">Aktual vs Target (gram)</div>
+              </div>
+            </div>
+            <canvas id="weightChart" height="180"></canvas>
+          </div>
+
+          <!-- Chart Mortalitas -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div class="chart-card-icon error"><span class="material-icons-round">heart_broken</span></div>
+              <div>
+                <div class="title-small bold">Tren Mortalitas</div>
+                <div class="label-small secondary-text">Kematian harian</div>
+              </div>
+            </div>
+            <canvas id="mortalityChart" height="160"></canvas>
+          </div>
+
+          <!-- Chart Distribusi Berat -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div class="chart-card-icon info"><span class="material-icons-round">assessment</span></div>
+              <div>
+                <div class="title-small bold">Distribusi Berat</div>
+                <div class="label-small secondary-text">Keseragaman kandang saat ini</div>
+              </div>
+            </div>
+            <canvas id="distributionChart" height="200"></canvas>
+          </div>
+
+          <!-- Tombol Aksi -->
+          <div class="action-col">
+            <button class="btn btn-outline btn-full" onclick="exportReport()">
+              <span class="material-icons-round">download</span>
+              Ekspor Laporan Pertumbuhan
+            </button>
+            <button class="btn btn-ghost btn-full secondary-text" onclick="navigateTo('settings')">
+              <span class="material-icons-round">settings</span>
+              Sesuaikan Kurva Target
+            </button>
+          </div>
+
+          <div class="spacer-xxl"></div>
+        </div>
+      </section>
+
+      <!-- ===== HALAMAN INVENTORI ===== -->
+      <section id="page-inventory" class="page">
+        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="display-small">Inventori</h2>
+                <p class="title-medium opacity-90">Pelacak Pakan &amp; Perlengkapan</p>
+              </div>
+              <div class="icon-btn-circle">
+                <span class="material-icons-round">inventory_2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-body">
+          <!-- Stat Cards -->
+          <div class="inv-stat-row">
+            <div class="inv-stat-card secondary">
+              <span class="material-icons-round">bakery_dining</span>
+              <div class="inv-stat-value" id="inv-feed-count">42</div>
+              <div class="inv-stat-label">Karung Pakan</div>
+            </div>
+            <div class="inv-stat-card error">
+              <span class="material-icons-round">warning_amber</span>
+              <div class="inv-stat-value" id="inv-critical-count">3</div>
+              <div class="inv-stat-label">Kritis</div>
+            </div>
+          </div>
+
+          <!-- Tab -->
+          <div class="tab-group full-width">
+            <button class="tab-btn active" onclick="switchInvTab('feed', this)">Stok Pakan</button>
+            <button class="tab-btn" onclick="switchInvTab('medication', this)">Obat</button>
+            <button class="tab-btn" onclick="switchInvTab('supplies', this)">Perlengkapan</button>
+          </div>
+
+          <!-- Stok List -->
+          <div class="inv-section">
+            <div class="section-header">
+              <span class="title-medium bold">Stok Saat Ini</span>
+              <button class="link-btn">Lihat Riwayat</button>
+            </div>
+            <div id="inv-list" class="inv-list"></div>
+          </div>
+
+          <!-- Update Stok -->
+          <div class="update-stock-card surface-card">
+            <div class="update-stock-header">
+              <span class="material-icons-round" style="color:#3B82F6">add_business</span>
+              <span class="title-medium bold">Perbarui Level Stok</span>
+            </div>
+            <div class="update-stock-form">
+              <select id="inv-item-select" class="form-select">
+                <option value="">Pilih item...</option>
+                <option value="starter">Starter Mash</option>
+                <option value="finisher">Finisher Pellets</option>
+                <option value="vitaminb12">Vitamin Boost B12</option>
+                <option value="antibiotic">Antibiotic A-Type</option>
+              </select>
+              <div class="form-row">
+                <input type="number" id="inv-qty-input" class="form-input" placeholder="Jumlah" min="0" />
+                <button class="btn btn-primary" onclick="updateStock()">
+                  <span class="material-icons-round">add</span>
+                  Tambah
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="spacer-xxl"></div>
+        </div>
+      </section>
+
+      <!-- ===== HALAMAN JADWAL KUNJUNGAN TS ===== -->
+      <section id="page-visits" class="page">
+        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="headline-medium bold">Jadwal Kunjungan</h2>
+                <p class="body-medium opacity-80">Tracking kunjungan Technical Service</p>
+              </div>
+              <div class="icon-btn-circle">
+                <span class="material-icons-round">event_available</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-mini">
+                <div class="title-large bold" id="visits-today-count">0</div>
+                <div class="label-small opacity-90">Hari Ini</div>
+              </div>
+              <div class="stat-mini">
+                <div class="title-large bold" id="visits-upcoming-count">0</div>
+                <div class="label-small opacity-90">Mendatang</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-body">
+          <!-- Tab Filter -->
+          <div class="tab-row">
+            <div class="tab-group">
+              <button class="tab-btn active" onclick="switchVisitsTab('upcoming', this)">Mendatang</button>
+              <button class="tab-btn" onclick="switchVisitsTab('completed', this)">Selesai</button>
+              <button class="tab-btn" onclick="switchVisitsTab('all', this)">Semua</button>
+            </div>
+            <button class="icon-btn-outline" onclick="filterVisits()">
+              <span class="material-icons-round">filter_list</span>
+            </button>
+          </div>
+
+          <!-- Visits List -->
+          <div id="visits-list" class="visits-list">
+            <div class="empty-state">
+              <span class="material-icons-round" style="font-size:48px;color:var(--hint)">event_busy</span>
+              <p class="body-medium secondary-text">Belum ada jadwal kunjungan</p>
+            </div>
+          </div>
+
+          <!-- Tambah Kunjungan -->
+          <button class="btn btn-primary btn-full mt-lg" onclick="if(checkPerm('visit.create','buat jadwal kunjungan')) showAddVisitModal()">
+            <span class="material-icons-round">add</span>
+            Jadwalkan Kunjungan Baru
+          </button>
+        </div>
+      </section>
+
+      <!-- ===== HALAMAN TARGET PERIODE ===== -->
+      <section id="page-targets" class="page">
+        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="headline-medium bold">Target Periode</h2>
+                <p class="body-medium opacity-80">Kelola target pakan & berat per kandang</p>
+              </div>
+              <div class="icon-btn-circle">
+                <span class="material-icons-round">flag</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-mini">
+                <div class="title-large bold" id="targets-total-count">0</div>
+                <div class="label-small opacity-90">Total Target</div>
+              </div>
+              <div class="stat-mini">
+                <div class="title-large bold" id="targets-kandang-count">0</div>
+                <div class="label-small opacity-90">Kandang</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-body">
+          <!-- Tab Filter -->
+          <div class="tab-row">
+            <div class="tab-group">
+              <button class="tab-btn active" onclick="switchTargetsTab('pakan', this)">Pakan</button>
+              <button class="tab-btn" onclick="switchTargetsTab('berat', this)">Berat</button>
+              <button class="tab-btn" onclick="switchTargetsTab('fcr', this)">FCR</button>
+            </div>
+            <button class="icon-btn-outline" onclick="refreshTargets()">
+              <span class="material-icons-round">refresh</span>
+            </button>
+          </div>
+
+          <!-- Targets List -->
+          <div id="targets-list" class="targets-list">
+            <div class="empty-state">
+              <span class="material-icons-round" style="font-size:48px;color:var(--hint)">flag</span>
+              <p class="body-medium secondary-text">Belum ada target periode</p>
+            </div>
+          </div>
+
+          <!-- Tambah Target (hanya TS/Owner/Manager) -->
+          <div id="btn-add-target-wrap">
+            <button class="btn btn-primary btn-full mt-lg" onclick="if(checkPerm('target.create','buat target')) showAddTargetModal()">
+              <span class="material-icons-round">add</span>
+              Buat Target Baru
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== HALAMAN PROGRAM KESEHATAN ===== -->
+      <section id="page-health" class="page">
+        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="headline-medium bold">Program Kesehatan</h2>
+                <p class="body-medium opacity-80">Jadwal obat, vaksin & vitamin</p>
+              </div>
+              <div class="icon-btn-circle">
+                <span class="material-icons-round">vaccines</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-mini">
+                <div class="title-large bold" id="health-today-count">0</div>
+                <div class="label-small opacity-90">Jadwal Hari Ini</div>
+              </div>
+              <div class="stat-mini">
+                <div class="title-large bold" id="health-program-count">0</div>
+                <div class="label-small opacity-90">Program Aktif</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-body">
+          <!-- Tab -->
+          <div class="tab-row">
+            <div class="tab-group">
+              <button class="tab-btn active" onclick="switchHealthTab('today', this)">Hari Ini</button>
+              <button class="tab-btn" onclick="switchHealthTab('programs', this)">Program</button>
+            </div>
+            <button class="icon-btn-outline" onclick="refreshHealth()">
+              <span class="material-icons-round">refresh</span>
+            </button>
+          </div>
+
+          <!-- Content area -->
+          <div id="health-content">
+            <div class="empty-state">
+              <span class="material-icons-round" style="font-size:48px;color:var(--hint)">vaccines</span>
+              <p class="body-medium secondary-text">Memuat data...</p>
+            </div>
+          </div>
+
+          <!-- Tombol tambah program (TS/Owner/Manager) -->
+          <div id="btn-add-program-wrap">
+            <button class="btn btn-primary btn-full mt-lg"
+                    onclick="if(checkPerm('health.create','buat program kesehatan')) showAddProgramModal()">
+              <span class="material-icons-round">add</span>
+              Buat Program Kesehatan
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== HALAMAN PENGIRIMAN (STAFF) ===== -->
+      <section id="page-delivery" class="page">
+        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="headline-medium bold">Pengiriman</h2>
+                <p class="body-medium opacity-80">Pakan, obat & supplies</p>
+              </div>
+              <div class="icon-btn-circle">
+                <span class="material-icons-round">local_shipping</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-mini">
+                <div class="title-large bold" id="delivery-pending-count">0</div>
+                <div class="label-small opacity-90">Menunggu</div>
+              </div>
+              <div class="stat-mini">
+                <div class="title-large bold" id="delivery-month-count">0</div>
+                <div class="label-small opacity-90">Bulan Ini</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-body">
+          <!-- Filter tab -->
+          <div class="tab-row">
+            <div class="tab-group">
+              <button class="tab-btn active" onclick="switchDeliveryTab('all',this)">Semua</button>
+              <button class="tab-btn" onclick="switchDeliveryTab('pending',this)">Menunggu</button>
+              <button class="tab-btn" onclick="switchDeliveryTab('received',this)">Diterima</button>
+            </div>
+            <button class="icon-btn-outline" onclick="refreshDeliveries()">
+              <span class="material-icons-round">refresh</span>
+            </button>
+          </div>
+
+          <!-- List -->
+          <div id="delivery-list" class="delivery-list">
+            <div class="empty-state">
+              <span class="material-icons-round" style="font-size:48px;color:var(--hint)">local_shipping</span>
+              <p class="body-medium secondary-text">Belum ada data pengiriman</p>
+            </div>
+          </div>
+
+          <!-- Tombol tambah (Staff/Owner/Manager) -->
+          <div id="btn-add-delivery-wrap">
+            <button class="btn btn-primary btn-full mt-lg"
+                    onclick="if(checkPerm('delivery.create','input pengiriman')) showAddDeliveryModal()">
+              <span class="material-icons-round">add</span>
+              Input Pengiriman Baru
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== HALAMAN COST PRODUKSI (STAFF) ===== -->
+      <section id="page-cost" class="page">
+        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="headline-medium bold">Cost Produksi</h2>
+                <p class="body-medium opacity-80">Analisis biaya & profit/loss</p>
+              </div>
+              <div class="icon-btn-circle">
+                <span class="material-icons-round">account_balance_wallet</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-mini">
+                <div class="title-large bold" id="cost-total-batches">0</div>
+                <div class="label-small opacity-90">Total Batch</div>
+              </div>
+              <div class="stat-mini">
+                <div class="title-large bold" id="cost-avg-margin">-</div>
+                <div class="label-small opacity-90">Avg Margin</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-body">
+          <!-- Tab -->
+          <div class="tab-row">
+            <div class="tab-group">
+              <button class="tab-btn active" onclick="switchCostTab('list',this)">Daftar Batch</button>
+              <button class="tab-btn" onclick="switchCostTab('summary',this)">Ringkasan</button>
+            </div>
+            <button class="icon-btn-outline" onclick="refreshCost()">
+              <span class="material-icons-round">refresh</span>
+            </button>
+          </div>
+
+          <div id="cost-content">
+            <div class="empty-state">
+              <span class="material-icons-round" style="font-size:48px;color:var(--hint)">account_balance_wallet</span>
+              <p class="body-medium secondary-text">Memuat data...</p>
+            </div>
+          </div>
+
+          <div id="btn-add-cost-wrap">
+            <button class="btn btn-primary btn-full mt-lg"
+                    onclick="if(checkPerm('cost.create','buat cost produksi')) showAddCostModal()">
+              <span class="material-icons-round">add</span>
+              Buat Laporan Cost Baru
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== HALAMAN PENGATURAN ===== -->
+      <section id="page-settings" class="page">        <div class="page-header">
+          <div class="header-bg">
+            <div class="header-inner">
+              <div class="header-text">
+                <h2 class="display-small">Pengaturan</h2>
+                <p class="title-medium opacity-90">Konfigurasi Peternakan</p>
+              </div>
+              <div class="icon-btn-circle border-white">
+                <span class="material-icons-round">agriculture</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-body settings-body">
+          <!-- Detail Peternakan -->
+          <div class="settings-section">
+            <div class="settings-section-title">Detail Peternakan</div>
+            <div class="farm-stat-row">
+              <div class="farm-stat-card">
+                <div class="farm-stat-label">Ukuran Kandang</div>
+                <div class="farm-stat-value">5.000 Ekor</div>
+              </div>
+              <div class="farm-stat-card">
+                <div class="farm-stat-label">Tipe Kandang</div>
+                <div class="farm-stat-value">Tertutup</div>
+              </div>
+            </div>
+            <div class="settings-row" onclick="editFarmName()">
+              <div class="settings-row-icon primary"><span class="material-icons-round">home_work</span></div>
+              <div class="settings-row-text">
+                <div class="title-small bold">Nama Peternakan</div>
+                <div class="body-small secondary-text" id="farm-name-display">Green Valley Broilers</div>
+              </div>
+              <span class="material-icons-round secondary-text">edit</span>
+            </div>
+          </div>
+
+          <!-- Tim & Anggota -->
+          <div class="settings-section" id="section-team">
+            <div class="settings-section-title">Tim & Anggota</div>
+            <div class="team-member-list" id="team-member-list">
+              <div style="color:var(--hint);font-size:13px;padding:8px 0">Memuat anggota...</div>
+            </div>
+            <div id="invite-form-wrap" class="team-invite-form" style="display:none">
+              <div class="auth-field">
+                <label class="auth-label">Email anggota baru</label>
+                <input type="email" id="invite-email" class="form-input full" placeholder="nama@email.com" />
+              </div>
+              <div class="auth-field">
+                <label class="auth-label">Role</label>
+                <select id="invite-role" class="form-select full">
+                  <option value="manager">Manajer</option>
+                  <option value="operator" selected>Operator</option>
+                  <option value="viewer">Viewer</option>
+                </select>
+              </div>
+              <div id="invite-link-result" class="team-invite-link hidden"></div>
+              <button class="btn btn-primary" onclick="doInvite()">
+                <span class="material-icons-round">send</span>
+                Kirim Undangan
+              </button>
+            </div>
+            <button class="btn btn-outline btn-full" id="btn-show-invite"
+                    onclick="toggleInviteForm()" style="margin-top:10px">
+              <span class="material-icons-round">person_add</span>
+              Undang Anggota
+            </button>
+          </div>
+
+          <!-- Notifikasi -->
+          <div class="settings-section">
+            <div class="settings-section-title">Notifikasi</div>
+            <div class="settings-row">
+              <div class="settings-row-icon info"><span class="material-icons-round">notifications_active</span></div>
+              <div class="settings-row-text">
+                <div class="title-small bold">Notifikasi Push</div>
+                <div class="body-small secondary-text">Pengingat harian &amp; peringatan kritis</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-push" checked onchange="toggleSetting('push', this.checked)" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-icon secondary"><span class="material-icons-round">assessment</span></div>
+              <div class="settings-row-text">
+                <div class="title-small bold">Laporan Mingguan</div>
+                <div class="body-small secondary-text">Ringkasan FCR dan pertumbuhan</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-weekly" onchange="toggleSetting('weekly', this.checked)" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Preferensi -->
+          <div class="settings-section">
+            <div class="settings-section-title">Preferensi</div>
+            <div class="settings-row" onclick="changeMeasurement()">
+              <div class="settings-row-icon warning"><span class="material-icons-round">straighten</span></div>
+              <div class="settings-row-text">
+                <div class="title-small bold">Satuan Pengukuran</div>
+                <div class="body-small secondary-text">Metrik (Liter, Kilogram)</div>
+              </div>
+              <span class="material-icons-round secondary-text">chevron_right</span>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-icon dark"><span class="material-icons-round">dark_mode</span></div>
+              <div class="settings-row-text">
+                <div class="title-small bold">Mode Gelap</div>
+                <div class="body-small secondary-text">Lebih nyaman di malam hari</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-dark" onchange="toggleDarkMode(this.checked)" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Tombol -->
+          <div class="action-col">
+            <button class="btn btn-outline btn-full" onclick="showHelp()">
+              <span class="material-icons-round">help_outline</span>
+              Bantuan &amp; Dukungan
+            </button>
+            <button class="btn btn-ghost btn-full" style="color:#EF4444" onclick="signOut()">
+              <span class="material-icons-round">logout</span>
+              Keluar
+            </button>
+          </div>
+
+          <div class="spacer-xxl"></div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="nav-item active" onclick="navigateTo('dashboard')" data-page="dashboard">
+        <span class="material-icons-round">dashboard</span>
+        <span>Beranda</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('daily')" data-page="daily">
+        <span class="material-icons-round">edit_note</span>
+        <span>Laporan</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('flock')" data-page="flock">
+        <span class="material-icons-round">egg_alt</span>
+        <span>Kandang</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('growth')" data-page="growth">
+        <span class="material-icons-round">bar_chart</span>
+        <span>Grafik</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('inventory')" data-page="inventory">
+        <span class="material-icons-round">inventory_2</span>
+        <span>Inventori</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('visits')" data-page="visits">
+        <span class="material-icons-round">event_available</span>
+        <span>Kunjungan</span>
+      </button>
+      <button class="nav-item" id="nav-targets" onclick="navigateTo('targets')" data-page="targets">
+        <span class="material-icons-round">flag</span>
+        <span>Target</span>
+      </button>
+      <button class="nav-item" id="nav-health" onclick="navigateTo('health')" data-page="health">
+        <span class="material-icons-round">vaccines</span>
+        <span>Kesehatan</span>
+      </button>
+      <button class="nav-item" id="nav-delivery" onclick="navigateTo('delivery')" data-page="delivery">
+        <span class="material-icons-round">local_shipping</span>
+        <span>Kirim</span>
+      </button>
+      <button class="nav-item" id="nav-cost" onclick="navigateTo('cost')" data-page="cost">
+        <span class="material-icons-round">account_balance_wallet</span>
+        <span>Cost</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('settings')" data-page="settings">
+        <span class="material-icons-round">settings</span>
+        <span>Pengaturan</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Modal Tambah Kandang -->
+  <div id="modal-add-flock" class="modal-overlay hidden">
+    <div class="modal-card modal-card--flock">
+      <div class="modal-header">
+        <h3 class="title-large bold">Tambah Kandang Baru</h3>
+        <button class="icon-btn" onclick="closeModal('modal-add-flock')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">Nama Kandang</label>
+        <input type="text" id="new-flock-name" class="form-input full" placeholder="cth. Kandang Utara A" />
+        <label class="form-label">Ras Ayam</label>
+        <select id="new-flock-breed" class="form-select full">
+          <option value="Cobb 500">Cobb 500</option>
+          <option value="Ross 308">Ross 308</option>
+          <option value="Hubbard">Hubbard</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+        <label class="form-label">Jumlah Ayam</label>
+        <input type="number" id="new-flock-qty" class="form-input full" placeholder="cth. 5000" min="1" />
+        <label class="form-label">Tanggal Mulai</label>
+        <input type="date" id="new-flock-date" class="form-input full" />
+        <label class="form-label">Nama Petugas</label>
+        <input type="text" id="new-flock-officer" class="form-input full" placeholder="cth. Budi Santoso" />
+
+        <!-- ===== LOKASI KANDANG ===== -->
+        <div class="form-label" style="margin-top:12px">
+          Lokasi Kandang
+          <span class="form-label-hint">(opsional)</span>
+        </div>
+
+        <!-- OWNER: Peta Leaflet interaktif -->
+        <div id="location-owner-section">
+          <div class="location-map-hint">
+            <span class="material-icons-round" style="font-size:16px;color:var(--primary)">touch_app</span>
+            Klik pada peta untuk menentukan lokasi kandang
+          </div>
+          <div id="flock-map" class="flock-map-container"></div>
+          <div id="map-coords-display" class="map-coords-display hidden">
+            <span class="material-icons-round" style="font-size:15px;color:var(--success)">location_on</span>
+            <span id="map-coords-text"></span>
+            <button class="link-btn" onclick="clearFlockLocation()" style="color:var(--error);margin-left:auto">
+              <span class="material-icons-round" style="font-size:14px">close</span>
+            </button>
+          </div>
+          <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="useMyLocationMap()">
+            <span class="material-icons-round">my_location</span>
+            Gunakan Lokasi Saya
+          </button>
+        </div>
+
+        <!-- OPERATOR/PETUGAS: Input koordinat manual -->
+        <div id="location-operator-section" class="hidden">
+          <div class="location-manual-wrap">
+            <div class="location-manual-row">
+              <input type="number" id="manual-lat" class="form-input" placeholder="Latitude (cth. -6.2088)"
+                     step="0.000001" min="-90" max="90" oninput="onManualCoordsChange()" />
+              <input type="number" id="manual-lng" class="form-input" placeholder="Longitude (cth. 106.8456)"
+                     step="0.000001" min="-180" max="180" oninput="onManualCoordsChange()" />
+            </div>
+            <div class="location-manual-actions">
+              <button class="btn btn-outline" style="flex:1" onclick="useMyLocationManual()">
+                <span class="material-icons-round">my_location</span>
+                Gunakan Lokasi Saya
+              </button>
+              <button class="btn btn-outline" id="btn-open-maps" style="flex:1;display:none" onclick="openInMaps()">
+                <span class="material-icons-round">map</span>
+                Buka di Maps
+              </button>
+            </div>
+            <div id="manual-coords-status" class="manual-coords-status hidden"></div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-add-flock')">Batal</button>
+        <button class="btn btn-primary" onclick="addFlock()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Timbang Berat Badan -->
+  <div id="modal-timbang" class="modal-overlay hidden">
+    <div class="modal-card modal-card--timbang">
+
+      <!-- Header -->
+      <div class="timbang-header">
+        <div class="timbang-header-title">Timbang Berat Badan</div>
+        <div class="timbang-header-meta">
+          <span>Umur :</span>
+          <span id="timbang-umur-display"></span>
+          <span id="timbang-date-display"></span>
+        </div>
+        <button class="icon-btn timbang-close" onclick="closeModal('modal-timbang')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+
+      <!-- Input per timbang -->
+      <div class="timbang-input-card">
+        <div class="timbang-ekor-row">
+          <input type="number" id="timbang-ekor-input" class="timbang-ekor-field"
+                 placeholder="jml ekor" min="1" value="5" />
+          <span class="timbang-ekor-label">per timbang</span>
+        </div>
+        <div class="timbang-input-row">
+          <input type="number" id="timbang-berat-input" class="timbang-berat-field"
+                 placeholder="" min="0" step="0.1"
+                 onkeydown="if(event.key==='Enter') addTimbang()" />
+          <button class="timbang-add-btn" onclick="addTimbang()">+</button>
+        </div>
+      </div>
+
+      <!-- Tabel hasil -->
+      <div class="timbang-table-card">
+        <table class="timbang-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Berat</th>
+              <th>Sample</th>
+              <th>Rata-rata</th>
+            </tr>
+          </thead>
+          <tbody id="timbang-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Ringkasan -->
+      <div class="timbang-ringkasan">
+        <div class="timbang-ringkasan-title">Ringkasan :</div>
+        <div class="timbang-ringkasan-row">
+          <span>Rata-rata Berat</span>
+          <span id="timbang-avg-display">0</span>
+          <span>gr</span>
+        </div>
+        <div class="timbang-ringkasan-row">
+          <span>Std target</span>
+          <span id="timbang-std-display" class="timbang-std-value">0</span>
+          <span class="timbang-std-label">std</span>
+        </div>
+        <div class="timbang-ringkasan-row">
+          <span>CV</span>
+          <span id="timbang-cv-display"></span>
+          <span>%</span>
+        </div>
+      </div>
+
+      <!-- Tombol simpan -->
+      <div class="timbang-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-timbang')">Batal</button>
+        <button class="btn btn-primary" onclick="saveTimbang()">Simpan</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal: Tambah/Edit Kunjungan -->
+  <div id="modal-visit" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold" id="modal-visit-title">Jadwalkan Kunjungan</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-visit')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="visit-id" value="" />
+
+        <!-- Kandang -->
+        <div class="auth-field">
+          <label class="auth-label">Kandang</label>
+          <select id="visit-kandang" class="form-select full" required>
+            <option value="">Pilih kandang...</option>
+          </select>
+        </div>
+
+        <!-- Tanggal & Waktu -->
+        <div class="form-row">
+          <div class="auth-field" style="flex:2">
+            <label class="auth-label">Tanggal Kunjungan</label>
+            <input type="date" id="visit-tanggal" class="form-input full" required />
+          </div>
+          <div class="auth-field" style="flex:1">
+            <label class="auth-label">Waktu Mulai</label>
+            <input type="time" id="visit-waktu" class="form-input full" />
+          </div>
+        </div>
+
+        <!-- Tujuan -->
+        <div class="auth-field">
+          <label class="auth-label">Tujuan Kunjungan</label>
+          <select id="visit-tujuan" class="form-select full" required>
+            <option value="rutin">Rutin</option>
+            <option value="emergency">Emergency</option>
+            <option value="konsultasi">Konsultasi</option>
+            <option value="monitoring">Monitoring</option>
+            <option value="training">Training</option>
+          </select>
+        </div>
+
+        <!-- Catatan Sebelum -->
+        <div class="auth-field">
+          <label class="auth-label">Catatan / Rencana Kunjungan</label>
+          <textarea id="visit-catatan" class="form-textarea full" rows="3" 
+                    placeholder="Apa yang akan dilakukan selama kunjungan..."></textarea>
+        </div>
+
+        <!-- Checklist Items -->
+        <div class="auth-field">
+          <label class="auth-label">Checklist</label>
+          <div id="visit-checklist-container" class="checklist-container">
+            <div class="checklist-item">
+              <input type="checkbox" id="check-1" disabled />
+              <label for="check-1">Cek kondisi kandang</label>
+            </div>
+            <div class="checklist-item">
+              <input type="checkbox" id="check-2" disabled />
+              <label for="check-2">Cek kesehatan ayam</label>
+            </div>
+            <div class="checklist-item">
+              <input type="checkbox" id="check-3" disabled />
+              <label for="check-3">Review target pakan</label>
+            </div>
+            <div class="checklist-item">
+              <input type="checkbox" id="check-4" disabled />
+              <label for="check-4">Cek suhu dan ventilasi</label>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm mt-sm" onclick="addChecklistItem()">
+            <span class="material-icons-round">add</span>
+            Tambah Item
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-visit')">Batal</button>
+        <button class="btn btn-primary" onclick="saveVisit()">
+          <span class="material-icons-round">save</span>
+          Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Detail Kunjungan -->
+  <div id="modal-visit-detail" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold">Detail Kunjungan</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-visit-detail')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body" id="visit-detail-content">
+        <!-- Content will be populated by JavaScript -->
+      </div>
+
+      <div class="modal-footer" id="visit-detail-actions">
+        <!-- Actions will be populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Complete Kunjungan -->
+  <div id="modal-complete-visit" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold">Selesaikan Kunjungan</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-complete-visit')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="complete-visit-id" value="" />
+
+        <!-- Checklist -->
+        <div class="auth-field">
+          <label class="auth-label">Checklist</label>
+          <div id="complete-checklist-container" class="checklist-container">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Catatan Sesudah -->
+        <div class="auth-field">
+          <label class="auth-label">Catatan Kunjungan</label>
+          <textarea id="complete-catatan" class="form-textarea full" rows="3" 
+                    placeholder="Apa yang dilakukan selama kunjungan..."></textarea>
+        </div>
+
+        <!-- Findings -->
+        <div class="auth-field">
+          <label class="auth-label">Temuan</label>
+          <textarea id="complete-findings" class="form-textarea full" rows="3" 
+                    placeholder="Temuan atau masalah yang ditemukan..."></textarea>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="auth-field">
+          <label class="auth-label">Rekomendasi</label>
+          <textarea id="complete-recommendations" class="form-textarea full" rows="3" 
+                    placeholder="Rekomendasi untuk operator/owner..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-complete-visit')">Batal</button>
+        <button class="btn btn-primary" onclick="submitCompleteVisit()">
+          <span class="material-icons-round">check_circle</span>
+          Selesaikan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Buat / Edit Target ===== -->
+  <div id="modal-target" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold" id="modal-target-title">Buat Target Baru</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-target')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="target-edit-id" />
+
+        <!-- Nama Target -->
+        <div class="auth-field">
+          <label class="auth-label">Nama Target <span style="color:var(--hint);font-weight:400">(opsional)</span></label>
+          <input type="text" id="target-nama" class="form-input full" placeholder="cth: Target Batch #402 Kandang A" />
+        </div>
+
+        <!-- Kandang -->
+        <div class="auth-field">
+          <label class="auth-label">Kandang <span style="color:var(--error)">*</span></label>
+          <select id="target-kandang" class="form-select full" onchange="onTargetKandangChange()">
+            <option value="">Pilih kandang...</option>
+          </select>
+        </div>
+
+        <!-- Tipe Target -->
+        <div class="auth-field">
+          <label class="auth-label">Tipe Target <span style="color:var(--error)">*</span></label>
+          <div class="target-type-group">
+            <button class="target-type-btn active" data-type="pakan" onclick="selectTargetType('pakan', this)">
+              <span class="material-icons-round">grain</span>
+              <span>Pakan</span>
+              <small>g/ekor/hari</small>
+            </button>
+            <button class="target-type-btn" data-type="berat" onclick="selectTargetType('berat', this)">
+              <span class="material-icons-round">monitor_weight</span>
+              <span>Berat</span>
+              <small>gram</small>
+            </button>
+            <button class="target-type-btn" data-type="fcr" onclick="selectTargetType('fcr', this)">
+              <span class="material-icons-round">analytics</span>
+              <span>FCR</span>
+              <small>rasio</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- Breed -->
+        <div class="auth-field">
+          <label class="auth-label">Breed / Strain</label>
+          <select id="target-breed" class="form-select full" onchange="onBreedChange()">
+            <option value="Cobb 500">Cobb 500</option>
+            <option value="Ross 308">Ross 308</option>
+            <option value="custom">Custom (isi manual)</option>
+          </select>
+        </div>
+
+        <!-- Periode -->
+        <div class="form-row-2">
+          <div class="auth-field">
+            <label class="auth-label">Tanggal Mulai <span style="color:var(--error)">*</span></label>
+            <input type="date" id="target-periode-mulai" class="form-input full" onchange="onPeriodeChange()" />
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Tanggal Selesai <span style="color:var(--error)">*</span></label>
+            <input type="date" id="target-periode-selesai" class="form-input full" onchange="onPeriodeChange()" />
+          </div>
+        </div>
+
+        <!-- Hari Mulai -->
+        <div class="auth-field">
+          <label class="auth-label">Mulai dari Hari ke-</label>
+          <input type="number" id="target-hari-mulai" class="form-input full" value="1" min="1" max="60" onchange="onPeriodeChange()" />
+          <p class="form-hint">Hari ke-berapa ayam saat periode ini dimulai</p>
+        </div>
+
+        <!-- Preview / Bulk Edit -->
+        <div class="auth-field" id="target-values-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <label class="auth-label" style="margin:0">Nilai Target per Hari</label>
+            <button class="btn-link-sm" onclick="fillFromTemplate()">
+              <span class="material-icons-round" style="font-size:14px">auto_fix_high</span>
+              Isi dari Template
+            </button>
+          </div>
+          <div id="target-values-grid" class="target-values-grid">
+            <p style="color:var(--hint);font-size:13px">Pilih kandang, tipe, dan periode terlebih dahulu</p>
+          </div>
+        </div>
+
+        <!-- Catatan -->
+        <div class="auth-field">
+          <label class="auth-label">Catatan</label>
+          <textarea id="target-catatan" class="form-textarea full" rows="2" placeholder="Catatan tambahan..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-target')">Batal</button>
+        <button class="btn btn-primary" onclick="saveTarget()">
+          <span class="material-icons-round">save</span>
+          Simpan Target
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Detail Target ===== -->
+  <div id="modal-target-detail" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold" id="target-detail-title">Detail Target</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-target-detail')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body" id="target-detail-body">
+        <!-- diisi oleh JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-target-detail')">Tutup</button>
+        <button class="btn btn-secondary" id="btn-edit-target" onclick="editTargetFromDetail()">
+          <span class="material-icons-round">edit</span>
+          Edit
+        </button>
+        <button class="btn btn-error" id="btn-delete-target" onclick="deleteTargetFromDetail()">
+          <span class="material-icons-round">delete</span>
+          Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Buat / Edit Program Kesehatan ===== -->
+  <div id="modal-program" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold" id="modal-program-title">Buat Program Kesehatan</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-program')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="program-edit-id" />
+        <div class="auth-field">
+          <label class="auth-label">Kandang <span style="color:var(--error)">*</span></label>
+          <select id="program-kandang" class="form-select full"></select>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Nama Program <span style="color:var(--error)">*</span></label>
+          <input type="text" id="program-nama" class="form-input full"
+                 placeholder="cth: Program Vaksinasi Batch #402" />
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Deskripsi</label>
+          <textarea id="program-deskripsi" class="form-textarea full" rows="2"
+                    placeholder="Deskripsi singkat program..."></textarea>
+        </div>
+
+        <!-- Daftar item dalam program -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px">
+          <label class="auth-label" style="margin:0">Item Obat / Vaksin / Vitamin</label>
+          <button class="btn-link-sm" onclick="addMedItemRow()">
+            <span class="material-icons-round" style="font-size:14px">add</span>
+            Tambah Item
+          </button>
+        </div>
+        <div id="med-items-list" class="med-items-list">
+          <!-- diisi JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-program')">Batal</button>
+        <button class="btn btn-primary" onclick="saveProgram()">
+          <span class="material-icons-round">save</span>
+          Simpan Program
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Detail Program ===== -->
+  <div id="modal-program-detail" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold" id="program-detail-title">Detail Program</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-program-detail')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body" id="program-detail-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-program-detail')">Tutup</button>
+        <button class="btn btn-secondary" id="btn-edit-program" onclick="editProgramFromDetail()">
+          <span class="material-icons-round">edit</span>Edit
+        </button>
+        <button class="btn btn-error" id="btn-delete-program" onclick="deleteProgramFromDetail()">
+          <span class="material-icons-round">delete</span>Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Catat Pemberian Obat ===== -->
+  <div id="modal-give-med" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="title-large bold">Catat Pemberian</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-give-med')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="give-item-id" />
+        <input type="hidden" id="give-kandang-id" />
+        <input type="hidden" id="give-hari-ke" />
+        <div id="give-med-info" style="background:var(--surface-variant);border-radius:10px;padding:12px;margin-bottom:16px"></div>
+        <div class="auth-field">
+          <label class="auth-label">Jumlah Diberikan</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" id="give-jumlah" class="form-input" style="flex:1" min="0" step="0.1" placeholder="0" />
+            <span id="give-satuan" style="color:var(--secondary-text);font-size:14px;white-space:nowrap">-</span>
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Catatan</label>
+          <textarea id="give-catatan" class="form-textarea full" rows="2" placeholder="Catatan tambahan..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="markMedSkipped()">
+          <span class="material-icons-round">cancel</span>Lewati
+        </button>
+        <button class="btn btn-primary" onclick="markMedCompleted()">
+          <span class="material-icons-round">check_circle</span>Selesai
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Input Pengiriman ===== -->
+  <div id="modal-delivery" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold" id="modal-delivery-title">Input Pengiriman</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-delivery')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="delivery-edit-id" />
+
+        <div class="form-row-2">
+          <div class="auth-field">
+            <label class="auth-label">Kandang <span style="color:var(--error)">*</span></label>
+            <select id="delivery-kandang" class="form-select full"></select>
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Tipe <span style="color:var(--error)">*</span></label>
+            <select id="delivery-type" class="form-select full">
+              <option value="pakan">Pakan</option>
+              <option value="obat">Obat</option>
+              <option value="vitamin">Vitamin</option>
+              <option value="vaksin">Vaksin</option>
+              <option value="supplies">Supplies</option>
+              <option value="lainnya">Lainnya</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label">Nama Item <span style="color:var(--error)">*</span></label>
+          <input type="text" id="delivery-item-name" class="form-input full"
+                 placeholder="cth: Pakan BR-1, Vaksin ND, Vitamin C..." />
+        </div>
+
+        <div class="form-row-2">
+          <div class="auth-field">
+            <label class="auth-label">Jumlah <span style="color:var(--error)">*</span></label>
+            <input type="number" id="delivery-jumlah" class="form-input full" min="0.1" step="0.1" placeholder="0" />
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Satuan <span style="color:var(--error)">*</span></label>
+            <input type="text" id="delivery-satuan" class="form-input full" placeholder="karung, kg, botol, box..." />
+          </div>
+        </div>
+
+        <!-- Harga — hanya tampil untuk Staff/Owner/Manager -->
+        <div id="delivery-price-section" class="form-row-2">
+          <div class="auth-field">
+            <label class="auth-label">Harga Satuan (Rp)</label>
+            <input type="number" id="delivery-harga" class="form-input full" min="0" step="100"
+                   placeholder="0" oninput="updateDeliveryTotal()" />
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Total Harga</label>
+            <div id="delivery-total-display"
+                 style="padding:10px 12px;background:var(--surface-variant);border-radius:8px;font-weight:600;color:var(--primary)">
+              Rp 0
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="auth-field">
+            <label class="auth-label">Supplier</label>
+            <input type="text" id="delivery-supplier" class="form-input full" placeholder="Nama supplier..." />
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">No. Invoice</label>
+            <input type="text" id="delivery-invoice" class="form-input full" placeholder="INV-..." />
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="auth-field">
+            <label class="auth-label">Tanggal Kirim <span style="color:var(--error)">*</span></label>
+            <input type="date" id="delivery-tgl-kirim" class="form-input full" />
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Status</label>
+            <select id="delivery-status" class="form-select full">
+              <option value="pending">Menunggu</option>
+              <option value="delivered">Dikirim</option>
+              <option value="received">Diterima</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label">Catatan</label>
+          <textarea id="delivery-catatan" class="form-textarea full" rows="2" placeholder="Catatan tambahan..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-delivery')">Batal</button>
+        <button class="btn btn-primary" onclick="saveDelivery()">
+          <span class="material-icons-round">save</span>
+          Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Detail Pengiriman ===== -->
+  <div id="modal-delivery-detail" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold" id="delivery-detail-title">Detail Pengiriman</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-delivery-detail')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body" id="delivery-detail-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-delivery-detail')">Tutup</button>
+        <button class="btn btn-success" id="btn-confirm-delivery" onclick="confirmDeliveryReceived()">
+          <span class="material-icons-round">check_circle</span>Konfirmasi Terima
+        </button>
+        <button class="btn btn-secondary" id="btn-edit-delivery" onclick="editDeliveryFromDetail()">
+          <span class="material-icons-round">edit</span>Edit
+        </button>
+        <button class="btn btn-error" id="btn-delete-delivery" onclick="deleteDeliveryFromDetail()">
+          <span class="material-icons-round">delete</span>Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Buat / Edit Cost Produksi ===== -->
+  <div id="modal-cost" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold" id="modal-cost-title">Buat Laporan Cost</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-cost')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="cost-edit-id" />
+
+        <div class="form-row-2">
+          <div class="auth-field">
+            <label class="auth-label">Kandang <span style="color:var(--error)">*</span></label>
+            <select id="cost-kandang" class="form-select full" onchange="onCostKandangChange()"></select>
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Nama Batch</label>
+            <input type="text" id="cost-nama-batch" class="form-input full" placeholder="cth: Batch #402" />
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="auth-field">
+            <label class="auth-label">Periode Mulai <span style="color:var(--error)">*</span></label>
+            <input type="date" id="cost-periode-mulai" class="form-input full" onchange="onCostPeriodeChange()" />
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Periode Selesai</label>
+            <input type="date" id="cost-periode-selesai" class="form-input full" onchange="onCostPeriodeChange()" />
+          </div>
+        </div>
+
+        <!-- Auto-calculate dari deliveries -->
+        <div id="cost-auto-calc-section" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 8px">
+            <span style="font-size:13px;font-weight:600">Komponen Biaya</span>
+            <button class="btn-link-sm" onclick="autoCalcFromDeliveries()">
+              <span class="material-icons-round" style="font-size:14px">auto_fix_high</span>
+              Hitung dari Pengiriman
+            </button>
+          </div>
+        </div>
+
+        <!-- Cost components grid -->
+        <div class="cost-components-grid" id="cost-components-grid">
+          <!-- diisi JS -->
+        </div>
+
+        <!-- Total cost display -->
+        <div class="cost-total-bar">
+          <span>Total Biaya Produksi</span>
+          <span id="cost-total-display" style="font-weight:700;color:var(--primary)">Rp 0</span>
+        </div>
+
+        <!-- Hasil panen -->
+        <div style="font-size:13px;font-weight:600;margin:16px 0 8px">Hasil Panen</div>
+        <div class="form-row-2">
+          <div class="auth-field">
+            <label class="auth-label">Jumlah Panen (ekor)</label>
+            <input type="number" id="cost-panen-ekor" class="form-input full" min="0" placeholder="0" />
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Total Berat Panen (kg)</label>
+            <input type="number" id="cost-panen-kg" class="form-input full" min="0" step="0.1"
+                   placeholder="0" oninput="updateCostRevenue()" />
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="auth-field">
+            <label class="auth-label">Harga Jual / kg (Rp)</label>
+            <input type="number" id="cost-harga-jual" class="form-input full" min="0" step="100"
+                   placeholder="0" oninput="updateCostRevenue()" />
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Estimasi Revenue</label>
+            <div id="cost-revenue-display"
+                 style="padding:10px 12px;background:var(--surface-variant);border-radius:8px;font-weight:600;color:#10B981">
+              Rp 0
+            </div>
+          </div>
+        </div>
+
+        <!-- Profit preview -->
+        <div id="cost-profit-preview" class="cost-profit-preview" style="display:none"></div>
+
+        <div class="auth-field">
+          <label class="auth-label">Catatan</label>
+          <textarea id="cost-catatan" class="form-textarea full" rows="2" placeholder="Catatan tambahan..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-cost')">Batal</button>
+        <button class="btn btn-primary" onclick="saveCost()">
+          <span class="material-icons-round">save</span>
+          Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Detail Cost ===== -->
+  <div id="modal-cost-detail" class="modal">
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="title-large bold" id="cost-detail-title">Detail Cost Produksi</h3>
+        <button class="icon-btn-ghost" onclick="closeModal('modal-cost-detail')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body" id="cost-detail-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-cost-detail')">Tutup</button>
+        <button class="btn btn-success" id="btn-finalize-cost" onclick="finalizeCost()">
+          <span class="material-icons-round">lock</span>Finalisasi
+        </button>
+        <button class="btn btn-secondary" id="btn-edit-cost" onclick="editCostFromDetail()">
+          <span class="material-icons-round">edit</span>Edit
+        </button>
+        <button class="btn btn-error" id="btn-delete-cost" onclick="deleteCostFromDetail()">
+          <span class="material-icons-round">delete</span>Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Supabase SDK — harus dimuat sebelum auth-store.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/auth/auth-store.js"></script>
+  <script src="js/auth/auth-service.js"></script>
+  <script src="js/permission-guards.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="js/leaflet.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/ts-visits.js"></script>
+  <script src="js/period-targets.js"></script>
+  <script src="js/medication.js"></script>
+  <script src="js/deliveries.js"></script>
+  <script src="js/production-costs.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

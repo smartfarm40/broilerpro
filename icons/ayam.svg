@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120">
+  <!-- Kaki kiri -->
+  <line x1="38" y1="105" x2="35" y2="118" stroke="#FF8C00" stroke-width="3" stroke-linecap="round"/>
+  <line x1="35" y1="118" x2="28" y2="122" stroke="#FF8C00" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="35" y1="118" x2="35" y2="124" stroke="#FF8C00" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="35" y1="118" x2="42" y2="122" stroke="#FF8C00" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Kaki kanan -->
+  <line x1="62" y1="105" x2="65" y2="118" stroke="#FF8C00" stroke-width="3" stroke-linecap="round"/>
+  <line x1="65" y1="118" x2="58" y2="122" stroke="#FF8C00" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="65" y1="118" x2="65" y2="124" stroke="#FF8C00" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="65" y1="118" x2="72" y2="122" stroke="#FF8C00" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Sayap kanan -->
+  <ellipse cx="78" cy="72" rx="14" ry="9" fill="#A0440A" transform="rotate(-20 78 72)"/>
+  <line x1="72" y1="68" x2="88" y2="72" stroke="#7A3008" stroke-width="1.5"/>
+  <line x1="72" y1="72" x2="88" y2="76" stroke="#7A3008" stroke-width="1.5"/>
+  <!-- Badan -->
+  <ellipse cx="48" cy="80" rx="34" ry="30" fill="#C0510F" stroke="#1a1a1a" stroke-width="2.5"/>
+  <!-- Kepala -->
+  <circle cx="50" cy="42" r="24" fill="#C0510F" stroke="#1a1a1a" stroke-width="2.5"/>
+  <!-- Jengger -->
+  <ellipse cx="44" cy="20" rx="7" ry="9" fill="#E8000A" stroke="#1a1a1a" stroke-width="1.5"/>
+  <ellipse cx="52" cy="17" rx="7" ry="10" fill="#E8000A" stroke="#1a1a1a" stroke-width="1.5"/>
+  <ellipse cx="60" cy="20" rx="6" ry="8" fill="#E8000A" stroke="#1a1a1a" stroke-width="1.5"/>
+  <!-- Mata kiri -->
+  <circle cx="40" cy="38" r="7" fill="white" stroke="#1a1a1a" stroke-width="1.5"/>
+  <circle cx="40" cy="38" r="3" fill="#1a1a1a"/>
+  <!-- Mata kanan -->
+  <circle cx="60" cy="38" r="7" fill="white" stroke="#1a1a1a" stroke-width="1.5"/>
+  <circle cx="60" cy="38" r="3" fill="#1a1a1a"/>
+  <!-- Paruh atas -->
+  <polygon points="50,48 42,56 58,56" fill="#FFD700" stroke="#1a1a1a" stroke-width="1.5"/>
+  <!-- Paruh bawah -->
+  <polygon points="44,56 56,56 50,62" fill="#E8000A" stroke="#1a1a1a" stroke-width="1"/>
+  <!-- Pial -->
+  <ellipse cx="50" cy="60" rx="5" ry="4" fill="#E8000A" stroke="#1a1a1a" stroke-width="1"/>
+  <!-- Shadow badan -->
+  <ellipse cx="52" cy="90" rx="26" ry="12" fill="#A0440A" opacity="0.4"/>
+</svg>

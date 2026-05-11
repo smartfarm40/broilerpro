@@ -1,0 +1,198 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#3B82F6" />
+  <title>Masuk — BroilerTrack</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body data-theme="light">
+
+<div class="auth-page">
+
+  <!-- Header -->
+  <div class="auth-header">
+    <div class="auth-logo">
+      <span class="material-icons-round">egg_alt</span>
+    </div>
+    <h1 class="auth-app-name">BroilerTrack</h1>
+    <p class="auth-tagline">Manajemen Peternakan Ayam Broiler</p>
+  </div>
+
+  <!-- Card Login -->
+  <div class="auth-card" id="card-login">
+    <h2 class="auth-card-title">Masuk</h2>
+    <p class="auth-card-sub">Masuk ke akun Anda</p>
+
+    <div class="auth-form">
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">email</span>
+          <input type="email" id="login-email" class="auth-input" placeholder="nama@email.com"
+                 autocomplete="email" />
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">lock</span>
+          <input type="password" id="login-password" class="auth-input" placeholder="••••••••"
+                 autocomplete="current-password"
+                 onkeydown="if(event.key==='Enter') doLogin()" />
+          <button class="auth-eye-btn" onclick="togglePw('login-password', this)" tabindex="-1">
+            <span class="material-icons-round">visibility</span>
+          </button>
+        </div>
+      </div>
+
+      <div style="text-align:right;margin-top:-4px;margin-bottom:8px">
+        <a href="#" class="auth-link" style="font-size:13px" onclick="showForgotPassword()">
+          Lupa password?
+        </a>
+      </div>
+
+      <div class="auth-error hidden" id="login-error"></div>
+      <button class="auth-btn auth-btn--primary" onclick="doLogin()" id="login-btn">
+        <span class="material-icons-round">login</span>
+        Masuk
+      </button>
+    </div>
+
+    <div class="auth-divider"><span>atau</span></div>
+    <p class="auth-switch">
+      Belum punya akun?
+      <a href="register.html" class="auth-link">Daftar sekarang</a>
+    </p>
+  </div>
+
+  <!-- Card Lupa Password -->
+  <div class="auth-card hidden" id="card-forgot">
+    <button class="auth-back-btn" onclick="showCard('login')">
+      <span class="material-icons-round">arrow_back</span>
+    </button>
+    <h2 class="auth-card-title">Reset Password</h2>
+    <p class="auth-card-sub">Masukkan email Anda untuk menerima link reset password</p>
+    <div class="auth-form">
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">email</span>
+          <input type="email" id="forgot-email" class="auth-input" placeholder="nama@email.com" />
+        </div>
+      </div>
+      <div class="auth-error hidden" id="forgot-error"></div>
+      <div class="auth-success hidden" id="forgot-success"
+           style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:10px 12px;color:#10B981;font-size:13px;margin-bottom:8px">
+      </div>
+      <button class="auth-btn auth-btn--primary" onclick="doForgotPassword()" id="forgot-btn">
+        <span class="material-icons-round">send</span>
+        Kirim Link Reset
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<div id="auth-toast" class="toast hidden"></div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/auth/auth-store.js"></script>
+<script src="../js/auth/auth-service.js"></script>
+<script>
+  // Redirect jika sudah login
+  (async () => {
+    const loggedIn = await AUTH.init();
+    if (loggedIn) window.location.href = '../index.html';
+  })();
+
+  async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn      = document.getElementById('login-btn');
+    const errEl    = document.getElementById('login-error');
+
+    errEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons-round spin">refresh</span> Memproses...';
+
+    const result = await AuthService.login({ email, password });
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round">login</span> Masuk';
+
+    if (result.error) {
+      errEl.textContent = result.error;
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    showToastAuth('Selamat datang, ' + (result.profile?.nama || email));
+    setTimeout(() => window.location.href = '../index.html', 800);
+  }
+
+  function showForgotPassword() {
+    const email = document.getElementById('login-email').value.trim();
+    if (email) document.getElementById('forgot-email').value = email;
+    showCard('forgot');
+  }
+
+  async function doForgotPassword() {
+    const email  = document.getElementById('forgot-email').value.trim();
+    const btn    = document.getElementById('forgot-btn');
+    const errEl  = document.getElementById('forgot-error');
+    const succEl = document.getElementById('forgot-success');
+
+    errEl.classList.add('hidden');
+    succEl.classList.add('hidden');
+
+    if (!email) {
+      errEl.textContent = 'Masukkan email Anda';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons-round spin">refresh</span> Mengirim...';
+
+    const result = await AuthService.resetPassword({ email });
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round">send</span> Kirim Link Reset';
+
+    if (result.error) {
+      errEl.textContent = result.error;
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    succEl.textContent = 'Link reset password telah dikirim ke ' + email + '. Cek inbox Anda.';
+    succEl.classList.remove('hidden');
+  }
+
+  function showCard(name) {
+    document.getElementById('card-login').classList.toggle('hidden', name !== 'login');
+    document.getElementById('card-forgot').classList.toggle('hidden', name !== 'forgot');
+  }
+
+  function togglePw(id, btn) {
+    const inp  = document.getElementById(id);
+    const show = inp.type === 'password';
+    inp.type   = show ? 'text' : 'password';
+    btn.querySelector('.material-icons-round').textContent = show ? 'visibility_off' : 'visibility';
+  }
+
+  function showToastAuth(msg) {
+    const t = document.getElementById('auth-toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    setTimeout(() => t.classList.add('hidden'), 2500);
+  }
+</script>
+</body>
+</html>

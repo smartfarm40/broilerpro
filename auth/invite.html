@@ -1,0 +1,164 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Undangan — BroilerTrack</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body data-theme="light">
+<div class="auth-page">
+  <div class="auth-header">
+    <div class="auth-logo"><span class="material-icons-round">egg_alt</span></div>
+    <h1 class="auth-app-name">BroilerTrack</h1>
+  </div>
+
+  <!-- Info undangan -->
+  <div class="auth-card" id="card-invite">
+    <div class="invite-org-badge" id="invite-badge">
+      <div class="invite-badge-inner">
+        <span class="material-icons-round">person_add</span>
+        <div>
+          <div style="font-weight:700">Undangan BroilerTrack</div>
+          <div id="invite-role-label" style="font-size:12px;opacity:.8"></div>
+        </div>
+      </div>
+    </div>
+    <h2 class="auth-card-title">Anda Diundang!</h2>
+    <p class="auth-card-sub" id="invite-desc">Buat akun untuk bergabung ke tim</p>
+
+    <div class="auth-form">
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">email</span>
+          <input type="email" id="inv-email" class="auth-input" placeholder="nama@email.com" />
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Nama Lengkap</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">person</span>
+          <input type="text" id="inv-nama" class="auth-input" placeholder="Nama lengkap Anda" />
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Buat Password</label>
+        <div class="auth-input-wrap">
+          <span class="material-icons-round auth-input-icon">lock</span>
+          <input type="password" id="inv-password" class="auth-input" placeholder="Min. 8 karakter" />
+          <button class="auth-eye-btn" onclick="togglePw('inv-password',this)" tabindex="-1">
+            <span class="material-icons-round">visibility</span>
+          </button>
+        </div>
+      </div>
+      <div class="auth-error hidden" id="inv-error"></div>
+      <button class="auth-btn auth-btn--primary" onclick="doAccept()" id="inv-btn">
+        <span class="material-icons-round">how_to_reg</span>
+        Bergabung Sekarang
+      </button>
+    </div>
+
+    <div class="auth-divider"><span>atau</span></div>
+    <p class="auth-switch">
+      Sudah punya akun? <a href="login.html" class="auth-link">Masuk di sini</a>
+    </p>
+  </div>
+
+  <!-- Sukses -->
+  <div class="auth-card hidden" id="card-success">
+    <div class="auth-success-icon"><span class="material-icons-round">celebration</span></div>
+    <h2 class="auth-card-title">Akun Berhasil Dibuat!</h2>
+    <p class="auth-card-sub" id="success-msg"></p>
+    <button class="auth-btn auth-btn--primary" onclick="window.location.href='login.html'">
+      <span class="material-icons-round">login</span>
+      Masuk Sekarang
+    </button>
+  </div>
+</div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/auth/auth-store.js"></script>
+<script src="../js/auth/auth-service.js"></script>
+<script>
+  // Baca params dari URL
+  window.addEventListener('load', () => {
+    const params = new URLSearchParams(location.search);
+    const email  = params.get('email') || '';
+    const role   = params.get('role')  || 'kandang';
+    const kandang = params.get('kandang') || '';
+
+    if (email) document.getElementById('inv-email').value = email;
+
+    const roleLabels = { owner:'Pemilik', ts:'Technical Service', kandang:'Petugas Kandang', staff:'Staff' };
+    document.getElementById('invite-role-label').textContent = 'Role: ' + (roleLabels[role] || role);
+    document.getElementById('invite-desc').textContent =
+      email
+        ? email + ' diundang bergabung sebagai ' + (roleLabels[role] || role)
+        : 'Buat akun untuk bergabung ke tim';
+
+    // Simpan role & kandang untuk dipakai saat register
+    window._inviteRole   = role;
+    window._inviteKandang = kandang;
+  });
+
+  async function doAccept() {
+    const email    = document.getElementById('inv-email').value.trim();
+    const nama     = document.getElementById('inv-nama').value.trim();
+    const password = document.getElementById('inv-password').value;
+    const errEl    = document.getElementById('inv-error');
+    const btn      = document.getElementById('inv-btn');
+
+    errEl.classList.add('hidden');
+
+    if (!email || !email.includes('@')) {
+      errEl.textContent = 'Masukkan email yang valid';
+      errEl.classList.remove('hidden'); return;
+    }
+    if (!nama) {
+      errEl.textContent = 'Nama lengkap wajib diisi';
+      errEl.classList.remove('hidden'); return;
+    }
+    if (password.length < 8) {
+      errEl.textContent = 'Password minimal 8 karakter';
+      errEl.classList.remove('hidden'); return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons-round spin">refresh</span> Memproses...';
+
+    const result = await AuthService.register({
+      email,
+      password,
+      nama,
+      role:      window._inviteRole   || 'kandang',
+      kandangId: window._inviteKandang || null
+    });
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round">how_to_reg</span> Bergabung Sekarang';
+
+    if (result.error) {
+      errEl.textContent = result.error;
+      errEl.classList.remove('hidden'); return;
+    }
+
+    document.getElementById('success-msg').textContent =
+      'Akun ' + nama + ' berhasil dibuat. Silakan login untuk mulai menggunakan aplikasi.';
+    document.getElementById('card-invite').classList.add('hidden');
+    document.getElementById('card-success').classList.remove('hidden');
+  }
+
+  function togglePw(id, btn) {
+    const inp  = document.getElementById(id);
+    const show = inp.type === 'password';
+    inp.type   = show ? 'text' : 'password';
+    btn.querySelector('.material-icons-round').textContent = show ? 'visibility_off' : 'visibility';
+  }
+</script>
+</body>
+</html>
