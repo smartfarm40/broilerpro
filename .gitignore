@@ -1,5 +1,6 @@
-# Local Netlify folder
+# Netlify (tidak dipakai lagi)
 .netlify
+netlify.toml
 
 # Environment variables
 .env
@@ -8,3 +9,11 @@
 
 # Supabase
 supabase/.temp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.kiro/
