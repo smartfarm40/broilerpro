@@ -2592,8 +2592,11 @@ function addMedItemRow(existingItem = null) {
     ? Medication.parseHariPemberian(existingItem.hari_pemberian).join(', ')
     : '';
 
+  const type = existingItem?.medication_type || 'obat';
+  const typeInfo = Medication.getTypeInfo(type);
+
   const typeOptions = Object.entries(Medication.TYPES).map(([k, v]) =>
-    `<option value="${k}" ${existingItem?.medication_type === k ? 'selected' : ''}>${v.label}</option>`
+    `<option value="${k}" ${type === k ? 'selected' : ''}>${v.icon ? '' : ''}${v.label}</option>`
   ).join('');
 
   const row = document.createElement('div');
@@ -2601,19 +2604,45 @@ function addMedItemRow(existingItem = null) {
   row.id = rowId;
   row.dataset.itemId = existingItem?.id || '';
   row.innerHTML = `
-    <button class="btn-remove-item" onclick="removeMedItemRow('${rowId}')" title="Hapus item">
-      <span class="material-icons-round" style="font-size:18px">close</span>
-    </button>
-    <div class="med-item-row-header">
-      <select class="form-select" style="flex:1" data-field="type">${typeOptions}</select>
-    </div>
-    <div class="med-item-row-grid">
-      <div class="auth-field">
-        <label class="auth-label">Nama Produk *</label>
-        <input type="text" class="form-input full" data-field="nama"
-               value="${existingItem?.nama_produk || ''}" placeholder="cth: ND Lasota" />
+    <div class="med-item-row-top">
+      <!-- Tipe dengan warna -->
+      <div class="med-type-selector">
+        <div class="med-type-icon" id="${rowId}-icon"
+             style="background:${typeInfo.bg};color:${typeInfo.color}">
+          <span class="material-icons-round">${typeInfo.icon}</span>
+        </div>
+        <select class="form-select" data-field="type"
+                onchange="updateMedItemIcon('${rowId}', this.value)"
+                style="flex:1;font-size:13px">
+          ${typeOptions}
+        </select>
       </div>
-      <div class="auth-field">
+      <button class="med-item-remove-btn" onclick="removeMedItemRow('${rowId}')" title="Hapus">
+        <span class="material-icons-round">delete_outline</span>
+      </button>
+    </div>
+
+    <!-- Nama produk — paling penting, full width -->
+    <div class="auth-field" style="margin-top:10px">
+      <label class="auth-label">Nama Produk <span style="color:var(--error)">*</span></label>
+      <input type="text" class="form-input full" data-field="nama"
+             value="${existingItem?.nama_produk || ''}"
+             placeholder="cth: ND Lasota, Vitamin C, Amoxicillin..." />
+    </div>
+
+    <!-- Row: dosis + satuan + cara -->
+    <div class="med-item-inline-row">
+      <div class="auth-field" style="flex:1">
+        <label class="auth-label">Dosis</label>
+        <input type="number" class="form-input full" data-field="dosis"
+               min="0" step="0.1" value="${existingItem?.dosis || ''}" placeholder="0" />
+      </div>
+      <div class="auth-field" style="flex:1">
+        <label class="auth-label">Satuan</label>
+        <input type="text" class="form-input full" data-field="satuan"
+               value="${existingItem?.satuan || ''}" placeholder="ml / gram / cc" />
+      </div>
+      <div class="auth-field" style="flex:1.5">
         <label class="auth-label">Cara Pemberian</label>
         <select class="form-select full" data-field="cara">
           ${['air minum','suntik','semprot','pakan','tetes mata'].map(c =>
@@ -2621,30 +2650,45 @@ function addMedItemRow(existingItem = null) {
           ).join('')}
         </select>
       </div>
-      <div class="auth-field">
-        <label class="auth-label">Dosis</label>
-        <input type="number" class="form-input full" data-field="dosis" min="0" step="0.1"
-               value="${existingItem?.dosis || ''}" placeholder="0" />
-      </div>
-      <div class="auth-field">
-        <label class="auth-label">Satuan</label>
-        <input type="text" class="form-input full" data-field="satuan"
-               value="${existingItem?.satuan || ''}" placeholder="ml, gram, cc..." />
-      </div>
-      <div class="auth-field" style="grid-column:1/-1">
-        <label class="auth-label">Hari Pemberian (pisahkan koma) *</label>
+    </div>
+
+    <!-- Hari pemberian dengan chip preview -->
+    <div class="auth-field" style="margin-top:8px">
+      <label class="auth-label">
+        Hari Pemberian
+        <span style="color:var(--error)">*</span>
+        <span style="color:var(--hint);font-weight:400;font-size:10px;margin-left:4px">pisahkan dengan koma</span>
+      </label>
+      <div class="med-hari-input-wrap">
         <input type="text" class="med-item-hari-input" data-field="hari"
-               value="${hari}" placeholder="cth: 1, 7, 14, 21" />
-        <p class="form-hint">Hari ke-berapa obat/vaksin ini diberikan</p>
-      </div>
-      <div class="auth-field" style="grid-column:1/-1">
-        <label class="auth-label">Catatan</label>
-        <input type="text" class="form-input full" data-field="catatan"
-               value="${existingItem?.catatan || ''}" placeholder="Catatan tambahan..." />
+               value="${hari}" placeholder="cth: 1, 7, 14, 21"
+               oninput="updateHariChips('${rowId}', this.value)" />
+        <div class="med-hari-chips" id="${rowId}-chips">
+          ${hari ? hari.split(',').map(h => h.trim()).filter(Boolean)
+              .map(h => `<span class="med-hari-chip">H-${h}</span>`).join('') : ''}
+        </div>
       </div>
     </div>`;
 
   document.getElementById('med-items-list').appendChild(row);
+}
+
+// Update icon warna saat tipe berubah
+function updateMedItemIcon(rowId, type) {
+  const iconEl = document.getElementById(rowId + '-icon');
+  if (!iconEl) return;
+  const info = Medication.getTypeInfo(type);
+  iconEl.style.background = info.bg;
+  iconEl.style.color = info.color;
+  iconEl.querySelector('.material-icons-round').textContent = info.icon;
+}
+
+// Update chip preview hari pemberian
+function updateHariChips(rowId, value) {
+  const chipsEl = document.getElementById(rowId + '-chips');
+  if (!chipsEl) return;
+  const hari = value.split(',').map(h => h.trim()).filter(h => h && !isNaN(h));
+  chipsEl.innerHTML = hari.map(h => `<span class="med-hari-chip">H-${h}</span>`).join('');
 }
 
 function removeMedItemRow(rowId) {

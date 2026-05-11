@@ -1496,40 +1496,65 @@
   <div id="modal-program" class="modal hidden">
     <div class="modal-content modal-content-lg">
       <div class="modal-header">
-        <h3 class="title-large bold" id="modal-program-title">Buat Program Kesehatan</h3>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(139,92,246,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <span class="material-icons-round" style="color:#8B5CF6;font-size:20px">vaccines</span>
+          </div>
+          <div>
+            <h3 class="title-large bold" id="modal-program-title" style="font-size:15px">Buat Program Kesehatan</h3>
+            <p style="font-size:11px;color:var(--secondary-text);margin:0">Obat, vaksin & vitamin</p>
+          </div>
+        </div>
         <button class="icon-btn-ghost" onclick="closeModal('modal-program')">
           <span class="material-icons-round">close</span>
         </button>
       </div>
+
       <div class="modal-body">
         <input type="hidden" id="program-edit-id" />
-        <div class="auth-field">
-          <label class="auth-label">Kandang <span style="color:var(--error)">*</span></label>
-          <select id="program-kandang" class="form-select full"></select>
-        </div>
-        <div class="auth-field">
-          <label class="auth-label">Nama Program <span style="color:var(--error)">*</span></label>
-          <input type="text" id="program-nama" class="form-input full"
-                 placeholder="cth: Program Vaksinasi Batch #402" />
-        </div>
-        <div class="auth-field">
-          <label class="auth-label">Deskripsi</label>
-          <textarea id="program-deskripsi" class="form-textarea full" rows="2"
-                    placeholder="Deskripsi singkat program..."></textarea>
+
+        <!-- Info Program -->
+        <div class="prog-section">
+          <div class="prog-section-title">
+            <span class="material-icons-round">info</span>
+            Info Program
+          </div>
+          <div class="prog-section-body">
+            <div class="form-row-2">
+              <div class="auth-field">
+                <label class="auth-label">Kandang <span style="color:var(--error)">*</span></label>
+                <select id="program-kandang" class="form-select full"></select>
+              </div>
+              <div class="auth-field">
+                <label class="auth-label">Nama Program <span style="color:var(--error)">*</span></label>
+                <input type="text" id="program-nama" class="form-input full"
+                       placeholder="cth: Vaksinasi Batch #402" />
+              </div>
+            </div>
+            <div class="auth-field">
+              <label class="auth-label">Deskripsi <span style="color:var(--hint);font-weight:400">(opsional)</span></label>
+              <input type="text" id="program-deskripsi" class="form-input full"
+                     placeholder="Catatan singkat tentang program ini..." />
+            </div>
+          </div>
         </div>
 
-        <!-- Daftar item dalam program -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px">
-          <label class="auth-label" style="margin:0">Item Obat / Vaksin / Vitamin</label>
-          <button class="btn-link-sm" onclick="addMedItemRow()">
-            <span class="material-icons-round" style="font-size:14px">add</span>
-            Tambah Item
-          </button>
-        </div>
-        <div id="med-items-list" class="med-items-list">
-          <!-- diisi JS -->
+        <!-- Daftar Item -->
+        <div class="prog-section">
+          <div class="prog-section-title">
+            <span class="material-icons-round">medication</span>
+            Daftar Obat / Vaksin / Vitamin
+          </div>
+          <div class="prog-section-body">
+            <div id="med-items-list" class="med-items-list"></div>
+            <button class="prog-add-item-btn" onclick="addMedItemRow()">
+              <span class="material-icons-round">add_circle</span>
+              Tambah Item
+            </button>
+          </div>
         </div>
       </div>
+
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeModal('modal-program')">Batal</button>
         <button class="btn btn-primary" onclick="saveProgram()">

@@ -2208,3 +2208,151 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
   .target-type-btn .material-icons-round { font-size: 16px; }
   .target-type-btn span:nth-child(2) { font-size: 12px; }
 }
+
+/* ===== PROGRAM KESEHATAN MODAL REDESIGN ===== */
+
+/* Section dalam modal */
+.prog-section {
+  background: var(--surface-variant);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--outline-variant);
+}
+.prog-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--secondary-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--surface-variant);
+  border-bottom: 1px solid var(--outline-variant);
+}
+.prog-section-title .material-icons-round { font-size: 16px; }
+.prog-section-body {
+  padding: 14px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Tombol tambah item */
+.prog-add-item-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  border: 2px dashed var(--outline-variant);
+  border-radius: 10px;
+  background: none;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.prog-add-item-btn:hover {
+  background: rgba(59,130,246,.06);
+  border-color: var(--primary);
+}
+.prog-add-item-btn .material-icons-round { font-size: 18px; }
+
+/* Med item row — redesigned */
+.med-item-row {
+  background: var(--surface);
+  border: 1.5px solid var(--outline-variant);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.med-item-row:last-child { margin-bottom: 0; }
+
+.med-item-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.med-type-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.med-type-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.med-type-icon .material-icons-round { font-size: 18px; }
+
+.med-item-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--error);
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+  transition: opacity 0.15s, background 0.15s;
+}
+.med-item-remove-btn:hover { opacity: 1; background: rgba(239,68,68,.08); }
+.med-item-remove-btn .material-icons-round { font-size: 18px; }
+
+/* Inline row untuk dosis + satuan + cara */
+.med-item-inline-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.med-item-inline-row .auth-field { margin: 0; }
+
+/* Hari pemberian dengan chips */
+.med-hari-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.med-hari-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 0;
+}
+.med-hari-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: rgba(59,130,246,.12);
+  color: var(--primary);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Med items list spacing */
+.med-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+@media (max-width: 480px) {
+  .med-item-inline-row { flex-direction: column; gap: 8px; }
+  .prog-section-body { padding: 12px; }
+}
