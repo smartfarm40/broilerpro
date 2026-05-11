@@ -205,9 +205,10 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
 .toggle-switch input:checked + .toggle-slider{background:var(--primary)}
 .toggle-switch input:checked + .toggle-slider::before{transform:translateX(22px)}
 /* Bottom nav */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--divider);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom)}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;border:none;background:transparent;color:var(--secondary-text);font-family:'Fredoka',sans-serif;font-size:10px;font-weight:600;cursor:pointer;gap:2px;transition:color .2s}
-.nav-item .material-icons-round{font-size:22px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--divider);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom);overflow-x:auto;scrollbar-width:none}
+.bottom-nav::-webkit-scrollbar{display:none}
+.nav-item{flex:0 0 auto;min-width:52px;max-width:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px;border:none;background:transparent;color:var(--secondary-text);font-family:'Fredoka',sans-serif;font-size:9px;font-weight:600;cursor:pointer;gap:2px;transition:color .2s;white-space:nowrap}
+.nav-item .material-icons-round{font-size:20px}
 .nav-item.active{color:var(--primary)}
 /* Modal */
 .modal {
@@ -230,12 +231,13 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
 }
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end;justify-content:center}
 .modal-card{background:var(--surface);border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
-.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.modal-body{display:flex;flex-direction:column}
-.modal-footer{display:flex;gap:10px;margin-top:20px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--outline-variant)}
+.modal-body{display:flex;flex-direction:column;padding:16px 20px;gap:12px}
+.modal-footer{display:flex;gap:10px;padding:12px 20px 16px;border-top:1px solid var(--outline-variant)}
 .modal-footer .btn{flex:1}
 .icon-btn{background:none;border:none;cursor:pointer;color:var(--secondary-text);display:flex;align-items:center;justify-content:center;padding:4px}
 /* Toast */
@@ -1214,8 +1216,9 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
 
 /* Modal Content Large */
 .modal-content-lg {
-  max-width: 600px;
-  max-height: 90vh;
+  max-width: 520px;
+  width: calc(100vw - 32px);
+  max-height: 88vh;
   overflow-y: auto;
 }
 
@@ -1391,10 +1394,10 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
 }
 .target-type-btn {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 4px;
-  padding: 12px 8px;
+  gap: 8px;
+  padding: 10px 12px;
   border: 2px solid var(--outline-variant);
   border-radius: 12px;
   background: var(--surface);
@@ -1402,9 +1405,9 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
   transition: all 0.15s;
   color: var(--secondary-text);
 }
-.target-type-btn .material-icons-round { font-size: 22px; }
+.target-type-btn .material-icons-round { font-size: 18px; flex-shrink: 0; }
 .target-type-btn span:nth-child(2) { font-size: 13px; font-weight: 600; }
-.target-type-btn small { font-size: 10px; color: var(--hint); }
+.target-type-btn small { font-size: 10px; color: var(--hint); display: block; }
 .target-type-btn.active {
   border-color: var(--primary);
   background: rgba(59,130,246,.08);
@@ -2128,4 +2131,80 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
 @media (max-width: 400px) {
   .ts-log-metrics { grid-template-columns: repeat(2, 1fr); }
   .ts-report-summary { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ===== MODAL FORM IMPROVEMENTS ===== */
+
+/* auth-field dipakai di modal — pastikan ada di style.css */
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 0;
+}
+.auth-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--secondary-text);
+  letter-spacing: 0.3px;
+}
+
+/* Form inputs di modal */
+.modal .form-input,
+.modal .form-select,
+.modal .form-textarea {
+  font-size: 14px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--outline-variant);
+  background: var(--surface);
+  color: var(--on-surface);
+  width: 100%;
+  font-family: inherit;
+}
+.modal .form-input:focus,
+.modal .form-select:focus,
+.modal .form-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+}
+
+/* Modal body gap */
+.modal-body .auth-field + .auth-field,
+.modal-body .form-row-2 + .auth-field,
+.modal-body .auth-field + .form-row-2 {
+  margin-top: 4px;
+}
+
+/* Modal title */
+.modal-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* icon-btn-ghost di modal header */
+.icon-btn-ghost {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--secondary-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.icon-btn-ghost:hover { background: var(--surface-variant); }
+
+/* form-row-2 gap lebih kecil di mobile */
+@media (max-width: 480px) {
+  .form-row-2 { grid-template-columns: 1fr; gap: 8px; }
+  .modal-body { padding: 12px 16px; gap: 10px; }
+  .modal-header { padding: 14px 16px 10px; }
+  .modal-footer { padding: 10px 16px 14px; }
+  .target-type-btn { padding: 8px 10px; }
+  .target-type-btn .material-icons-round { font-size: 16px; }
+  .target-type-btn span:nth-child(2) { font-size: 12px; }
 }
