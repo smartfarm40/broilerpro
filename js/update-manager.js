@@ -3,7 +3,7 @@
 
 const UpdateManager = {
   newWorker: null,
-  currentVersion: '2.0',
+  currentVersion: '2.1',
 
   // ---- Initialize update checker ----
   init() {

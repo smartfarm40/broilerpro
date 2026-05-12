@@ -1,7 +1,7 @@
 // ===== SERVICE WORKER =====
 // Versi cache — naikkan angka ini setiap kali ada perubahan file
-const CACHE_VERSION = 'broilerpro-v2.0';
-const APP_VERSION = '2.0';  // Versi aplikasi untuk notifikasi
+const CACHE_VERSION = 'broilerpro-v2.1';
+const APP_VERSION = '2.1';  // Versi aplikasi untuk notifikasi
 const CACHE_NAME = CACHE_VERSION;
 
 const ASSETS = [
@@ -19,6 +19,7 @@ const ASSETS = [
   './js/medication.js',
   './js/deliveries.js',
   './js/production-costs.js',
+  './js/panen.js',
   './js/permission-guards.js',
   './manifest.json',
   './icons/ayam.svg',

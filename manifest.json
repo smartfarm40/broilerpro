@@ -2,7 +2,7 @@
   "name": "BroilerPro - Manajemen Peternakan Ayam",
   "short_name": "BroilerPro",
   "description": "Aplikasi manajemen dan laporan harian peternakan ayam broiler profesional",
-  "version": "2.0",
+  "version": "2.1",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
