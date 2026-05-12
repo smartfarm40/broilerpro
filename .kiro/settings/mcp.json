@@ -20,7 +20,8 @@
         "deploy_edge_function",
         "get_edge_function",
         "generate_typescript_types",
-        "list_migrations"
+        "list_migrations",
+        "get_logs"
       ]
     }
   }
