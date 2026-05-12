@@ -142,42 +142,46 @@
   window.addEventListener('load', async () => {
     const sb = AUTH.getSupabase();
 
-    // Supabase otomatis proses token dari URL hash (#access_token=...&type=invite)
-    const { data: { session }, error } = await sb.auth.getSession();
+    // Cek token dari URL hash terlebih dahulu
+    // Format: #access_token=xxx&refresh_token=yyy&type=invite
+    const hash = new URLSearchParams(location.hash.replace('#', ''));
+    const accessToken  = hash.get('access_token');
+    const refreshToken = hash.get('refresh_token');
+    const type         = hash.get('type');
 
-    if (error || !session) {
-      // Coba exchange token dari URL jika belum ada session
-      const hash = new URLSearchParams(location.hash.replace('#', ''));
-      const accessToken  = hash.get('access_token');
-      const refreshToken = hash.get('refresh_token');
-      const type         = hash.get('type');
+    // Jika ada token di hash (dari link undangan/magic link)
+    if (accessToken && (type === 'invite' || type === 'magiclink' || type === 'recovery')) {
+      const { data, error: setErr } = await sb.auth.setSession({
+        access_token:  accessToken,
+        refresh_token: refreshToken || ''
+      });
 
-      if (type === 'invite' && accessToken) {
-        const { data, error: setErr } = await sb.auth.setSession({
-          access_token:  accessToken,
-          refresh_token: refreshToken || ''
-        });
-
-        if (setErr || !data.session) {
-          document.getElementById('error-msg').textContent =
-            'Link undangan tidak valid atau sudah kadaluarsa. Minta owner untuk mengirim ulang undangan.';
-          showCard('error');
-          return;
-        }
-
-        await initCompleteForm(data.session);
-      } else if (session) {
-        await initCompleteForm(session);
-      } else {
+      if (setErr || !data.session) {
         document.getElementById('error-msg').textContent =
-          'Link undangan tidak ditemukan. Pastikan Anda membuka link dari email undangan.';
+          'Link undangan tidak valid atau sudah kadaluarsa. Minta owner untuk mengirim ulang undangan.';
         showCard('error');
+        return;
       }
+
+      // Bersihkan hash dari URL agar tidak terekspos
+      history.replaceState(null, '', location.pathname);
+      await initCompleteForm(data.session);
       return;
     }
 
-    // Session sudah ada (user klik link dari email)
-    await initCompleteForm(session);
+    // Tidak ada token di hash — cek apakah sudah ada session aktif
+    const { data: { session }, error } = await sb.auth.getSession();
+
+    if (session && !error) {
+      // User sudah login — tampilkan form set password
+      await initCompleteForm(session);
+      return;
+    }
+
+    // Tidak ada token dan tidak ada session
+    document.getElementById('error-msg').textContent =
+      'Link undangan tidak ditemukan. Pastikan Anda membuka link dari email undangan atau dari owner.';
+    showCard('error');
   });
 
   async function initCompleteForm(session) {
