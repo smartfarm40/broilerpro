@@ -140,20 +140,12 @@ const AuthService = {
     if (!AUTH.can('member.remove')) return { error: 'Tidak punya izin' };
     if (userId === AUTH.userId) return { error: 'Tidak bisa hapus diri sendiri' };
 
-    // Opsi 1: Soft delete - Set tenant_id ke null (anggota keluar dari organisasi)
-    // Opsi 2: Hard delete - Hapus dari profiles (tidak direkomendasikan)
-    // Opsi 3: Set role ke 'viewer' dan lepas dari kandang (current implementation)
-    
-    // Implementasi: Lepas anggota dari organisasi dengan set tenant_id = null
+    // Hard delete - Hapus dari profiles
+    // Foreign keys sudah di-set ON DELETE SET NULL, jadi aman
     const { error } = await sb
       .from('profiles')
-      .update({ 
-        tenant_id: null,  // Lepas dari organisasi
-        role: 'viewer',   // Reset role
-        kandang_id: null  // Lepas dari kandang
-      })
-      .eq('id', userId)
-      .eq('tenant_id', AUTH.tenantId); // Pastikan hanya hapus anggota dari tenant sendiri
+      .delete()
+      .eq('id', userId);
 
     if (error) return { error: error.message };
     return { success: true };
