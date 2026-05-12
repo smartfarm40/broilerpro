@@ -115,9 +115,8 @@ async function _loadDailyLogs(sb, kandangId) {
     .from('data_harian')
     .select(`
       id, kandang_id, hari, tanggal,
-      mati, culling, penyebab_mati,
-      pakan_total, pakan_jadwal_ts,
-      feed_code, feed_am, feed_pm,
+      mati, culling,
+      pakan_total, feed_code, feed_am, feed_pm,
       timbang_rows, checklist, activities,
       berat_rata_rata, is_complete,
       suhu_pagi, blower_nyala, inverter_status, inverter_hz, listrik_status,
@@ -294,7 +293,7 @@ async function saveLog(log) {
 
   let result;
   if (log._id) {
-    // Update existing
+    // Update existing by ID
     const { data, error } = await sb
       .from('data_harian')
       .update(payload)
@@ -303,10 +302,10 @@ async function saveLog(log) {
       .single();
     result = { data, error };
   } else {
-    // Insert baru
+    // Upsert — handle duplikat (kandang_id, hari, tanggal)
     const { data, error } = await sb
       .from('data_harian')
-      .insert(payload)
+      .upsert(payload, { onConflict: 'kandang_id,hari,tanggal' })
       .select()
       .single();
     if (!error && data) log._id = data.id;

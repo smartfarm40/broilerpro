@@ -430,11 +430,24 @@ function renderDaily() {
 
   const day = getCurrentDay();
   const el = document.getElementById('daily-day-title');
-  if (el) el.textContent = 'Hari ' + day;
   const subtitleEl = document.getElementById('daily-page-subtitle');
-  if (subtitleEl) subtitleEl.textContent = 'BroilerTrack Laporan Harian';
   const lbl = document.getElementById('btn-complete-label');
-  if (lbl) lbl.textContent = 'Hari ' + day;
+
+  if (role === 'operator') {
+    // Header: nama kandang + umur
+    const kandangId = AUTH.kandangId;
+    const flock = DB.flocks.find(f => (f._dbId || f.id) === kandangId) || DB.flocks.find(f => f.active);
+    const kandangName = flock ? (flock.name || flock.nama || 'Kandang') : 'Kandang';
+    const umur = flock ? (flock.age || day) : day;
+
+    if (el)        el.textContent        = kandangName;
+    if (subtitleEl) subtitleEl.textContent = 'Umur ' + umur + ' hari · Hari ke-' + day;
+    if (lbl)       lbl.textContent       = 'Hari ' + day;
+  } else {
+    if (el)        el.textContent        = 'Hari ' + day;
+    if (subtitleEl) subtitleEl.textContent = 'BroilerTrack Laporan Harian';
+    if (lbl)       lbl.textContent       = 'Hari ' + day;
+  }
   renderDayProgressNodes();
 
   // Operator: tampilkan target banner + jadwal obat
@@ -446,6 +459,9 @@ function renderDaily() {
     const banner = document.getElementById('operator-target-banner');
     if (banner) banner.classList.add('hidden');
   }
+
+  // Load feed codes dari pengiriman pakan
+  _loadFeedCodes();
 
   const log = getTodayLog();
   if (log) {
@@ -4042,9 +4058,9 @@ async function _loadOperatorTargetBanner() {
     return;
   }
 
-  // Tampilkan nama kandang
+  // Tampilkan nama operator
   const flock = DB.flocks.find(f => (f._dbId || f.id) === kandangId);
-  if (nameEl && flock) nameEl.textContent = flock.name || flock.nama || kandangId;
+  if (nameEl) nameEl.textContent = AUTH.userName || '-';
 
   // Ambil hari ke- saat ini
   const day = getCurrentDay();
@@ -4234,3 +4250,71 @@ calcFeedTotal = function() {
     window._targetBannerTimer = setTimeout(_loadOperatorTargetBanner, 600);
   }
 };
+
+// ============================================================
+// ===== FEED CODE LOADER =====
+// Ambil kode pakan dari data pengiriman, fallback ke list default
+// ============================================================
+
+// Default feed codes jika belum ada pengiriman
+const FEED_CODE_DEFAULTS = ['BR-1','BR-2','BR-3','511','512','594','BR-1P','BR-2P'];
+
+async function _loadFeedCodes() {
+  const sel = document.getElementById('input-feed-code');
+  if (!sel) return;
+
+  const currentVal = sel.value; // simpan nilai yang sedang dipilih
+
+  try {
+    const client = AUTH.getSupabase();
+    if (!client) throw new Error('no client');
+
+    // Ambil kandang aktif
+    const activeFlock = DB.flocks.find(f => f.active);
+    const kandangId   = activeFlock ? (activeFlock._dbId || activeFlock.id) : null;
+
+    // Query item_name dari deliveries tipe pakan
+    let q = client
+      .from('deliveries')
+      .select('item_name')
+      .eq('delivery_type', 'pakan')
+      .order('tanggal_kirim', { ascending: false });
+
+    // Filter per kandang jika operator
+    if (AUTH.role === 'operator' && kandangId) {
+      q = q.eq('kandang_id', kandangId);
+    }
+
+    const { data, error } = await q;
+
+    let codes = [];
+
+    if (!error && data && data.length > 0) {
+      // Ambil nama unik dari pengiriman
+      codes = [...new Set(data.map(d => d.item_name).filter(Boolean))];
+    }
+
+    // Fallback ke default jika tidak ada data pengiriman
+    if (codes.length === 0) {
+      codes = FEED_CODE_DEFAULTS;
+    }
+
+    // Rebuild options
+    const prevVal = currentVal || sel.value;
+    sel.innerHTML = codes.map(code =>
+      `<option value="${code}" ${code === prevVal ? 'selected' : ''}>${code}</option>`
+    ).join('');
+
+    // Jika nilai sebelumnya tidak ada di list baru, tambahkan
+    if (prevVal && !codes.includes(prevVal)) {
+      sel.innerHTML = `<option value="${prevVal}" selected>${prevVal}</option>` + sel.innerHTML;
+    }
+
+  } catch (e) {
+    // Fallback ke default tanpa error
+    const prevVal = sel.value;
+    sel.innerHTML = FEED_CODE_DEFAULTS.map(code =>
+      `<option value="${code}" ${code === prevVal ? 'selected' : ''}>${code}</option>`
+    ).join('');
+  }
+}
