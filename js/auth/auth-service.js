@@ -183,9 +183,10 @@ const AuthService = {
       if (!res.ok) return { error: data.error || 'Gagal mengirim undangan' };
 
       return {
-        success:  true,
-        message:  data.message,
-        type:     data.type,   // 'invite_sent' | 'role_updated'
+        success:     true,
+        message:     data.message,
+        type:        data.type,        // 'invite_generated' | 'role_updated'
+        invite_link: data.invite_link, // link undangan untuk dikirim via WA
         email,
         role
       };
