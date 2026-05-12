@@ -1,7 +1,8 @@
 // ===== SERVICE WORKER =====
 // Versi cache — naikkan angka ini setiap kali ada perubahan file
-const CACHE_VERSION = 'broilerpro-v19';
-const CACHE_NAME    = CACHE_VERSION;
+const CACHE_VERSION = 'broilerpro-v2.0';
+const APP_VERSION = '2.0';  // Versi aplikasi untuk notifikasi
+const CACHE_NAME = CACHE_VERSION;
 
 const ASSETS = [
   './',
@@ -31,29 +32,43 @@ const ASSETS = [
 
 // ---- Install: cache semua aset ----
 self.addEventListener('install', e => {
+  console.log('[SW] Installing version:', APP_VERSION);
   e.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(ASSETS))
       .catch(err => console.warn('[SW] Cache addAll gagal:', err))
   );
+  // Skip waiting agar SW baru langsung aktif
   self.skipWaiting();
 });
 
-// ---- Activate: hapus cache lama ----
+// ---- Activate: hapus cache lama & notifikasi client ----
 self.addEventListener('activate', e => {
+  console.log('[SW] Activating version:', APP_VERSION);
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(k => k !== CACHE_NAME)
-          .map(k => {
-            console.log('[SW] Menghapus cache lama:', k);
-            return caches.delete(k);
-          })
-      )
-    )
+    caches.keys().then(keys => {
+      const oldCaches = keys.filter(k => k !== CACHE_NAME);
+      
+      // Hapus semua cache lama
+      return Promise.all([
+        ...oldCaches.map(k => {
+          console.log('[SW] Menghapus cache lama:', k);
+          return caches.delete(k);
+        }),
+        // Notifikasi semua client bahwa update selesai
+        self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'UPDATE_COMPLETE',
+              version: APP_VERSION
+            });
+          });
+        })
+      ]);
+    })
   );
-  self.clients.claim();
+  // Claim semua client agar SW baru langsung kontrol
+  return self.clients.claim();
 });
 
 // ---- Fetch: cache-first untuk aset, network-first untuk API ----
@@ -90,4 +105,20 @@ self.addEventListener('fetch', e => {
         });
     })
   );
+});
+
+
+// ---- Message: handle perintah dari client ----
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    console.log('[SW] Client meminta skip waiting');
+    self.skipWaiting();
+  }
+  
+  if (e.data && e.data.type === 'GET_VERSION') {
+    e.ports[0].postMessage({
+      version: APP_VERSION,
+      cacheName: CACHE_NAME
+    });
+  }
 });
