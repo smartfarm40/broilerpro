@@ -4643,3 +4643,326 @@ async function _loadFeedCodes() {
     ).join('');
   }
 }
+
+
+// ===== PANEN MANAGEMENT =====
+let currentPanenTab = 'all';
+let allPanen = [];
+let currentPanenId = null;
+let currentTimbangRows = [];
+
+async function loadPanen() {
+  try {
+    allPanen = await Panen.getAll();
+    return allPanen;
+  } catch (e) {
+    console.error('[APP] loadPanen error:', e.message);
+    return [];
+  }
+}
+
+function renderPanen() {
+  const list = document.getElementById('panen-list');
+  if (!list) return;
+
+  // Filter by tab
+  let filtered = allPanen;
+  if (currentPanenTab !== 'all') {
+    filtered = allPanen.filter(p => p.status === currentPanenTab);
+  }
+
+  // Update stats
+  document.getElementById('panen-total-count').textContent = allPanen.length;
+  const thisMonth = allPanen.filter(p => {
+    const date = new Date(p.tanggal_panen);
+    const now = new Date();
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  }).length;
+  document.getElementById('panen-bulan-ini').textContent = thisMonth;
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state">' +
+      '<span class="material-icons-round" style="font-size:48px;color:var(--hint)">agriculture</span>' +
+      '<p class="body-medium secondary-text">Belum ada data panen</p>' +
+      '</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(p => {
+    const statusColor = Panen.getStatusColor(p.status);
+    const statusLabel = Panen.formatStatus(p.status);
+    const kandangName = p.kandang ? p.kandang.name : 'Kandang tidak diketahui';
+    const tanggal = Panen.formatDate(p.tanggal_panen);
+
+    return '<div class="panen-card" onclick="openPanenDetail(\'' + p.id + '\')">' +
+      '<div class="panen-card-header">' +
+        '<div>' +
+          '<div class="panen-card-title">' + kandangName + '</div>' +
+          '<div class="panen-card-subtitle">' + tanggal + ' • Umur ' + p.umur_hari + ' hari</div>' +
+        '</div>' +
+        '<span class="panen-status-badge ' + p.status + '">' + statusLabel + '</span>' +
+      '</div>' +
+      '<div class="panen-card-stats">' +
+        '<div class="panen-stat">' +
+          '<div class="panen-stat-val">' + (p.total_ekor || 0) + '</div>' +
+          '<div class="panen-stat-lbl">Ekor</div>' +
+        '</div>' +
+        '<div class="panen-stat">' +
+          '<div class="panen-stat-val">' + (p.total_berat || 0) + '</div>' +
+          '<div class="panen-stat-lbl">Total (kg)</div>' +
+        '</div>' +
+        '<div class="panen-stat">' +
+          '<div class="panen-stat-val">' + (p.berat_rata_rata || 0) + '</div>' +
+          '<div class="panen-stat-lbl">Rata-rata (kg)</div>' +
+        '</div>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function switchPanenTab(tab, btn) {
+  currentPanenTab = tab;
+  document.querySelectorAll('#page-panen .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPanen();
+}
+
+function filterPanen() {
+  // TODO: Implement advanced filter
+  showToast('🚧 Fitur filter akan segera hadir');
+}
+
+function showAddPanenModal() {
+  // Populate kandang dropdown
+  const select = document.getElementById('panen-kandang');
+  const activeFlocks = DB.flocks.filter(f => f.active);
+  
+  select.innerHTML = '<option value="">Pilih kandang...</option>' +
+    activeFlocks.map(f => '<option value="' + (f._dbId || f.id) + '">' + f.name + '</option>').join('');
+
+  // Set default date to today
+  document.getElementById('panen-tanggal').value = new Date().toISOString().split('T')[0];
+  
+  // Set penimbang to current user
+  document.getElementById('panen-penimbang').value = AUTH.userName || '';
+
+  document.getElementById('modal-add-panen').classList.remove('hidden');
+}
+
+function onPanenKandangChange() {
+  const kandangId = document.getElementById('panen-kandang').value;
+  const tanggal = document.getElementById('panen-tanggal').value;
+  
+  if (!kandangId || !tanggal) return;
+
+  // Calculate umur
+  const flock = DB.flocks.find(f => (f._dbId || f.id) === kandangId);
+  if (flock && flock.startDate) {
+    const start = new Date(flock.startDate);
+    const panen = new Date(tanggal);
+    const diffDays = Math.floor((panen - start) / (1000 * 60 * 60 * 24));
+    document.getElementById('panen-umur').value = diffDays;
+  }
+}
+
+async function createPanen() {
+  const kandangId = document.getElementById('panen-kandang').value;
+  const tanggal = document.getElementById('panen-tanggal').value;
+  const umur = parseInt(document.getElementById('panen-umur').value);
+  const penimbang = document.getElementById('panen-penimbang').value.trim();
+
+  if (!kandangId) { showToast('⚠️ Pilih kandang'); return; }
+  if (!tanggal) { showToast('⚠️ Pilih tanggal panen'); return; }
+  if (!umur || umur <= 0) { showToast('⚠️ Umur tidak valid'); return; }
+
+  showToast('⏳ Membuat panen...');
+
+  const result = await Panen.create({
+    kandang_id: kandangId,
+    tanggal_panen: tanggal,
+    umur_hari: umur,
+    penimbang_id: AUTH.userId
+  });
+
+  if (result.error) {
+    showToast('❌ Gagal: ' + result.error);
+    return;
+  }
+
+  closeModal('modal-add-panen');
+  showToast('✓ Panen berhasil dibuat');
+  
+  // Reload and open detail
+  await loadPanen();
+  renderPanen();
+  openPanenDetail(result.data.id);
+}
+
+async function openPanenDetail(panenId) {
+  currentPanenId = panenId;
+  const panen = await Panen.getById(panenId);
+  
+  if (!panen) {
+    showToast('⚠️ Data panen tidak ditemukan');
+    return;
+  }
+
+  // Set title
+  document.getElementById('panen-detail-title').textContent = 'Panen ' + (panen.kandang ? panen.kandang.name : '');
+  document.getElementById('panen-detail-subtitle').textContent = Panen.formatDate(panen.tanggal_panen) + ' • ' + Panen.formatStatus(panen.status);
+
+  // Set info
+  document.getElementById('panen-info-kandang').textContent = panen.kandang ? panen.kandang.name : '-';
+  document.getElementById('panen-info-tanggal').textContent = Panen.formatDate(panen.tanggal_panen);
+  document.getElementById('panen-info-umur').textContent = panen.umur_hari + ' hari';
+  document.getElementById('panen-info-penimbang').textContent = panen.penimbang ? panen.penimbang.nama : AUTH.userName;
+
+  // Load timbang rows
+  currentTimbangRows = panen.timbang_rows || [];
+  renderTimbangTable();
+  updatePanenSummary();
+
+  // Show/hide form based on status
+  const isCompleted = panen.status === 'completed';
+  document.getElementById('panen-timbang-form').style.display = isCompleted ? 'none' : 'block';
+  document.getElementById('btn-complete-panen').style.display = isCompleted ? 'none' : 'block';
+
+  document.getElementById('modal-panen-detail').classList.remove('hidden');
+}
+
+function renderTimbangTable() {
+  const tbody = document.getElementById('timbang-table-body');
+  
+  if (!currentTimbangRows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--hint)">Belum ada data timbang</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = currentTimbangRows.map((row, idx) => {
+    const totalBerat = row.berat * (row.jumlah_ekor || 1);
+    return '<tr>' +
+      '<td>' + (idx + 1) + '</td>' +
+      '<td>' + row.berat.toFixed(2) + '</td>' +
+      '<td>' + (row.jumlah_ekor || 1) + '</td>' +
+      '<td>' + totalBerat.toFixed(2) + '</td>' +
+      '<td>' + (row.catatan || '-') + '</td>' +
+      '<td>' +
+        '<button class="table-action-btn" onclick="deleteTimbangRow(\'' + row.id + '\')" title="Hapus">' +
+          '<span class="material-icons-round" style="font-size:18px">delete</span>' +
+        '</button>' +
+      '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function updatePanenSummary() {
+  const summary = Panen.calculateSummary(currentTimbangRows);
+  
+  document.getElementById('panen-summary-ekor').textContent = summary.total_ekor;
+  document.getElementById('panen-summary-berat').textContent = summary.total_berat.toFixed(2) + ' kg';
+  document.getElementById('panen-summary-rata').textContent = summary.berat_rata_rata.toFixed(2) + ' kg';
+  document.getElementById('panen-summary-minmax').textContent = summary.berat_min.toFixed(2) + ' - ' + summary.berat_max.toFixed(2) + ' kg';
+}
+
+async function addTimbangRow() {
+  const berat = parseFloat(document.getElementById('timbang-berat').value);
+  const jumlah = parseInt(document.getElementById('timbang-jumlah').value) || 1;
+  const catatan = document.getElementById('timbang-catatan').value.trim();
+
+  if (!berat || berat <= 0) { showToast('⚠️ Masukkan berat yang valid'); return; }
+  if (jumlah <= 0) { showToast('⚠️ Jumlah ekor minimal 1'); return; }
+
+  showToast('⏳ Menambah data timbang...');
+
+  const result = await Panen.addTimbang(currentPanenId, {
+    berat: berat,
+    jumlah_ekor: jumlah,
+    catatan: catatan || null
+  });
+
+  if (result.error) {
+    showToast('❌ Gagal: ' + result.error);
+    return;
+  }
+
+  // Clear form
+  document.getElementById('timbang-berat').value = '';
+  document.getElementById('timbang-jumlah').value = '1';
+  document.getElementById('timbang-catatan').value = '';
+
+  // Reload timbang rows
+  currentTimbangRows.push(result.data);
+  renderTimbangTable();
+  updatePanenSummary();
+  
+  showToast('✓ Data timbang ditambahkan');
+}
+
+async function deleteTimbangRow(timbangId) {
+  if (!confirm('Hapus data timbang ini?')) return;
+
+  showToast('⏳ Menghapus...');
+
+  const result = await Panen.deleteTimbang(timbangId);
+  
+  if (result.error) {
+    showToast('❌ Gagal: ' + result.error);
+    return;
+  }
+
+  // Remove from array
+  currentTimbangRows = currentTimbangRows.filter(r => r.id !== timbangId);
+  renderTimbangTable();
+  updatePanenSummary();
+  
+  showToast('✓ Data timbang dihapus');
+}
+
+async function completePanen() {
+  if (!currentTimbangRows.length) {
+    showToast('⚠️ Tambahkan minimal 1 data timbang');
+    return;
+  }
+
+  const confirmed = confirm(
+    'Selesaikan panen ini?\n\n' +
+    'Setelah diselesaikan, data tidak bisa diubah lagi.'
+  );
+  
+  if (!confirmed) return;
+
+  showToast('⏳ Menyelesaikan panen...');
+
+  const summary = Panen.calculateSummary(currentTimbangRows);
+  const result = await Panen.complete(currentPanenId, summary);
+
+  if (result.error) {
+    showToast('❌ Gagal: ' + result.error);
+    return;
+  }
+
+  closeModal('modal-panen-detail');
+  showToast('✓ Panen berhasil diselesaikan');
+  
+  // Reload
+  await loadPanen();
+  renderPanen();
+}
+
+async function exportPanenPDF() {
+  showToast('⏳ Generating PDF...');
+
+  const result = await Panen.generatePDF(currentPanenId);
+  
+  if (result.error) {
+    showToast('❌ Gagal: ' + result.error);
+    return;
+  }
+
+  // TODO: Implement actual PDF generation
+  showToast('🚧 Fitur export PDF akan segera hadir');
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).classList.add('hidden');
+}

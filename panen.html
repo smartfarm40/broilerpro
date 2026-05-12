@@ -1,0 +1,209 @@
+<!-- ===== HALAMAN PANEN ===== -->
+<section id="page-panen" class="page">
+  <div class="page-header">
+    <div class="header-bg">
+      <div class="header-inner">
+        <div class="header-text">
+          <h2 class="headline-medium bold">Panen Ayam</h2>
+          <p class="body-medium opacity-80">Kelola data panen & timbang</p>
+        </div>
+        <div class="icon-btn-circle">
+          <span class="material-icons-round">agriculture</span>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-mini">
+          <div class="title-large bold" id="panen-total-count">0</div>
+          <div class="label-small opacity-90">Total Panen</div>
+        </div>
+        <div class="stat-mini">
+          <div class="title-large bold" id="panen-bulan-ini">0</div>
+          <div class="label-small opacity-90">Bulan Ini</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <!-- Tab Filter -->
+    <div class="tab-row">
+      <div class="tab-group">
+        <button class="tab-btn active" onclick="switchPanenTab('all', this)">Semua</button>
+        <button class="tab-btn" onclick="switchPanenTab('draft', this)">Draft</button>
+        <button class="tab-btn" onclick="switchPanenTab('completed', this)">Selesai</button>
+      </div>
+      <button class="icon-btn-outline" onclick="filterPanen()">
+        <span class="material-icons-round">filter_list</span>
+      </button>
+    </div>
+
+    <!-- Panen List -->
+    <div id="panen-list" class="panen-list">
+      <div class="empty-state">
+        <span class="material-icons-round" style="font-size:48px;color:var(--hint)">agriculture</span>
+        <p class="body-medium secondary-text">Belum ada data panen</p>
+      </div>
+    </div>
+
+    <!-- Tambah Panen -->
+    <button class="btn btn-primary btn-full mt-lg" onclick="if(checkPerm('panen.create','buat panen')) showAddPanenModal()">
+      <span class="material-icons-round">add</span>
+      Buat Panen Baru
+    </button>
+  </div>
+</section>
+
+<!-- ===== MODAL: TAMBAH PANEN ===== -->
+<div id="modal-add-panen" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Buat Panen Baru</h3>
+      <button class="modal-close" onclick="closeModal('modal-add-panen')">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label">Kandang</label>
+        <select id="panen-kandang" class="form-select" onchange="onPanenKandangChange()">
+          <option value="">Pilih kandang...</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Tanggal Panen</label>
+        <input type="date" id="panen-tanggal" class="form-input" />
+      </div>
+      <div class="form-field">
+        <label class="form-label">Umur (Hari)</label>
+        <input type="number" id="panen-umur" class="form-input" placeholder="Contoh: 35" min="1" readonly />
+      </div>
+      <div class="form-field">
+        <label class="form-label">Nama Penimbang</label>
+        <input type="text" id="panen-penimbang" class="form-input" placeholder="Nama petugas penimbang" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-panen')">Batal</button>
+      <button class="btn btn-primary" onclick="createPanen()">Buat Panen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: DETAIL PANEN & TIMBANG ===== -->
+<div id="modal-panen-detail" class="modal hidden">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title" id="panen-detail-title">Detail Panen</h3>
+        <p class="modal-subtitle" id="panen-detail-subtitle"></p>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-panen-detail')">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Info Panen -->
+      <div class="panen-info-card">
+        <div class="panen-info-row">
+          <div class="panen-info-item">
+            <span class="panen-info-label">Kandang</span>
+            <span class="panen-info-value" id="panen-info-kandang">-</span>
+          </div>
+          <div class="panen-info-item">
+            <span class="panen-info-label">Tanggal</span>
+            <span class="panen-info-value" id="panen-info-tanggal">-</span>
+          </div>
+          <div class="panen-info-item">
+            <span class="panen-info-label">Umur</span>
+            <span class="panen-info-value" id="panen-info-umur">-</span>
+          </div>
+          <div class="panen-info-item">
+            <span class="panen-info-label">Penimbang</span>
+            <span class="panen-info-value" id="panen-info-penimbang">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ringkasan Panen -->
+      <div class="panen-summary-card">
+        <h4 class="panen-summary-title">Ringkasan Panen</h4>
+        <div class="panen-summary-grid">
+          <div class="panen-summary-item">
+            <span class="panen-summary-label">Total Ekor</span>
+            <span class="panen-summary-value" id="panen-summary-ekor">0</span>
+          </div>
+          <div class="panen-summary-item">
+            <span class="panen-summary-label">Total Berat</span>
+            <span class="panen-summary-value" id="panen-summary-berat">0 kg</span>
+          </div>
+          <div class="panen-summary-item">
+            <span class="panen-summary-label">Rata-rata</span>
+            <span class="panen-summary-value" id="panen-summary-rata">0 kg</span>
+          </div>
+          <div class="panen-summary-item">
+            <span class="panen-summary-label">Min - Max</span>
+            <span class="panen-summary-value" id="panen-summary-minmax">0 - 0 kg</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Tambah Timbang -->
+      <div class="panen-timbang-form" id="panen-timbang-form">
+        <h4 class="panen-form-title">Tambah Data Timbang</h4>
+        <div class="panen-form-row">
+          <div class="form-field" style="flex:1">
+            <label class="form-label">Berat (kg)</label>
+            <input type="number" id="timbang-berat" class="form-input" placeholder="2.5" step="0.01" min="0" />
+          </div>
+          <div class="form-field" style="flex:1">
+            <label class="form-label">Jumlah Ekor</label>
+            <input type="number" id="timbang-jumlah" class="form-input" placeholder="1" min="1" value="1" />
+          </div>
+          <div class="form-field" style="flex:2">
+            <label class="form-label">Catatan (opsional)</label>
+            <input type="text" id="timbang-catatan" class="form-input" placeholder="Catatan..." />
+          </div>
+          <button class="btn btn-primary" onclick="addTimbangRow()" style="margin-top:24px">
+            <span class="material-icons-round">add</span>
+            Tambah
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabel Data Timbang -->
+      <div class="panen-timbang-table">
+        <h4 class="panen-table-title">Data Timbang</h4>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Berat (kg)</th>
+                <th>Jumlah Ekor</th>
+                <th>Total Berat (kg)</th>
+                <th>Catatan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="timbang-table-body">
+              <tr>
+                <td colspan="6" style="text-align:center;color:var(--hint)">Belum ada data timbang</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-panen-detail')">Tutup</button>
+      <button class="btn btn-secondary" onclick="exportPanenPDF()" id="btn-export-pdf">
+        <span class="material-icons-round">picture_as_pdf</span>
+        Export PDF
+      </button>
+      <button class="btn btn-primary" onclick="completePanen()" id="btn-complete-panen">
+        <span class="material-icons-round">check_circle</span>
+        Selesaikan Panen
+      </button>
+    </div>
+  </div>
+</div>
