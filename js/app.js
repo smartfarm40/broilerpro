@@ -1309,22 +1309,26 @@ async function doInvite() {
   // Tampilkan konfirmasi sesuai tipe hasil
   const inviteLink = result.invite_link || '';
 
+  const noLinkMsg = '<div style="margin-top:8px;padding:10px 12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;font-size:12px;color:#92400E">' +
+    '<span class="material-icons-round" style="font-size:14px;vertical-align:middle;margin-right:4px">warning</span>' +
+    'Link tidak tersedia. Coba undang ulang atau hubungi support.</div>';
+
   if (result.type === 'role_updated') {
     resEl.innerHTML =
       '<div style="margin-bottom:6px">' +
       '<span class="material-icons-round" style="color:var(--warning);font-size:15px;vertical-align:middle">info</span> ' +
       '<strong>' + email + '</strong> sudah terdaftar. Role diperbarui ke <strong>' + role + '</strong>.</div>' +
-      (inviteLink ? _buildInviteLinkBox(inviteLink, 'Link login untuk dikirim via WA:') : '');
+      (inviteLink ? _buildInviteLinkBox(inviteLink, 'Link login untuk dikirim via WA:') : noLinkMsg);
   } else {
     resEl.innerHTML =
       '<div style="margin-bottom:6px">' +
       '<span class="material-icons-round" style="color:var(--success);font-size:15px;vertical-align:middle">check_circle</span> ' +
       'Link undangan berhasil dibuat untuk <strong>' + email + '</strong>.</div>' +
-      (inviteLink ? _buildInviteLinkBox(inviteLink, 'Salin dan kirim via WA / chat:') : '');
+      (inviteLink ? _buildInviteLinkBox(inviteLink, 'Salin dan kirim via WA / chat:') : noLinkMsg);
   }
   resEl.classList.remove('hidden');
   document.getElementById('invite-email').value = '';
-  showToast(result.type === 'role_updated' ? 'Role anggota diperbarui' : 'Link undangan siap disalin');
+  showToast(result.type === 'role_updated' ? 'Role anggota diperbarui' : (inviteLink ? 'Link undangan siap disalin' : 'Undangan dibuat, tapi link tidak tersedia'));
 }
 async function signOut() {
   if (confirm('Yakin ingin keluar?')) {
