@@ -97,17 +97,29 @@ function applyRoleUI() {
   }
 
   // ── 2. Nav items — tampilkan hanya yang relevan per role ─────────────────
-  // Semua nav items
   const navRules = {
-    'nav-targets':  AUTH.can('target.view'),
-    'nav-health':   AUTH.can('health.view'),
+    'nav-targets':  AUTH.can('target.view')    && !['staff','operator','viewer'].includes(role),
+    'nav-health':   AUTH.can('health.view')    && role !== 'staff',
     'nav-delivery': AUTH.can('delivery.view'),
     'nav-cost':     AUTH.can('cost.view'),
-    'nav-visits':   AUTH.can('visit.view') || AUTH.can('visit.create')
+    'nav-visits':   (AUTH.can('visit.view') || AUTH.can('visit.create')) && role !== 'staff'
   };
   Object.entries(navRules).forEach(([id, show]) => {
     const el = document.getElementById(id);
     if (el) el.style.display = show ? '' : 'none';
+  });
+
+  // Nav items tanpa id — sembunyikan per role
+  const navPageRules = {
+    'flock':   ['owner','manager'],           // hanya owner/manager bisa kelola kandang
+    'growth':  ['owner','manager','ts'],      // grafik untuk owner/manager/ts
+    'inventory': ['owner','manager','staff','operator'] // semua kecuali viewer
+  };
+  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    const page = el.getAttribute('data-page');
+    if (navPageRules[page]) {
+      el.style.display = navPageRules[page].includes(role) ? '' : 'none';
+    }
   });
 
   // ── 3. Tombol aksi — sembunyikan jika tidak punya permission ─────────────
@@ -198,6 +210,29 @@ function _applyDashboardWidgets() {
       </div>
       <div id="widget-health-today" class="widget-today-list">
         <div style="color:var(--hint);font-size:13px;padding:8px 0">Memuat...</div>
+      </div>
+      <div class="section-header" style="margin-top:12px">
+        <span class="title-medium bold">Pengiriman Pending</span>
+        <button class="link-btn" onclick="navigateTo('delivery')">Lihat Semua</button>
+      </div>
+      <div id="widget-delivery-pending" class="widget-today-list">
+        <div style="color:var(--hint);font-size:13px;padding:8px 0">Memuat...</div>
+      </div>`;
+  } else if (role === 'staff') {
+    widgetWrap.innerHTML = `
+      <div class="section-header" style="margin-top:16px">
+        <span class="title-medium bold">Pengiriman Pending</span>
+        <button class="link-btn" onclick="navigateTo('delivery')">Lihat Semua</button>
+      </div>
+      <div id="widget-delivery-pending" class="widget-today-list">
+        <div style="color:var(--hint);font-size:13px;padding:8px 0">Memuat...</div>
+      </div>
+      <div class="section-header" style="margin-top:12px">
+        <span class="title-medium bold">Stok Kritis</span>
+        <button class="link-btn" onclick="navigateTo('inventory')">Lihat Semua</button>
+      </div>
+      <div id="widget-stock-critical" class="widget-today-list">
+        <div style="color:var(--hint);font-size:13px;padding:8px 0">Memuat...</div>
       </div>`;
   } else if (role === 'operator') {
     widgetWrap.innerHTML = `
@@ -206,15 +241,6 @@ function _applyDashboardWidgets() {
         <button class="link-btn" onclick="navigateTo('health')">Lihat Semua</button>
       </div>
       <div id="widget-health-today" class="widget-today-list">
-        <div style="color:var(--hint);font-size:13px;padding:8px 0">Memuat...</div>
-      </div>`;
-  } else if (role === 'staff' || role === 'owner' || role === 'manager') {
-    widgetWrap.innerHTML = `
-      <div class="section-header" style="margin-top:16px">
-        <span class="title-medium bold">Pengiriman Pending</span>
-        <button class="link-btn" onclick="navigateTo('delivery')">Lihat Semua</button>
-      </div>
-      <div id="widget-delivery-pending" class="widget-today-list">
         <div style="color:var(--hint);font-size:13px;padding:8px 0">Memuat...</div>
       </div>`;
   }
@@ -304,6 +330,27 @@ async function _loadDashboardWidgets() {
         }).join('');
       }
     } catch (e) { deliveryEl.innerHTML = ''; }
+  }
+
+  // Widget stok kritis (Staff)
+  const stockEl = document.getElementById('widget-stock-critical');
+  if (stockEl) {
+    const critical = DB.inventory.filter(i => i.status === 'reorder' || i.status === 'empty');
+    if (!critical.length) {
+      stockEl.innerHTML = '<div style="color:var(--hint);font-size:13px;padding:4px 0">Semua stok aman ✓</div>';
+    } else {
+      stockEl.innerHTML = critical.slice(0, 3).map(item => `
+        <div class="widget-item" onclick="navigateTo('inventory')">
+          <span class="material-icons-round" style="color:${item.iconColor};font-size:18px">${item.icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600">${item.name}</div>
+            <div style="font-size:11px;color:var(--secondary-text)">${item.qty} ${item.unit} tersisa</div>
+          </div>
+          <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(239,68,68,.12);color:#DC2626">
+            ${item.status === 'empty' ? 'Habis' : 'Kritis'}
+          </span>
+        </div>`).join('');
+    }
   }
 
   // Alert mortalitas tinggi
@@ -414,11 +461,18 @@ function renderDaily() {
   const role = AUTH.role;
 
   // ── TS: tampilkan histori laporan semua kandang ───────────────────────────
-  if (role === 'ts') {
+  if (role === 'ts' || role === 'staff') {
     document.getElementById('daily-ts-view').classList.remove('hidden');
     document.getElementById('daily-input-view').classList.add('hidden');
-    document.getElementById('daily-day-title').textContent = 'Histori Laporan';
-    document.getElementById('daily-page-subtitle').textContent = '1 Minggu Terakhir';
+
+    if (role === 'ts') {
+      document.getElementById('daily-day-title').textContent = 'Histori Laporan';
+      document.getElementById('daily-page-subtitle').textContent = '1 Minggu Terakhir';
+    } else {
+      // Staff: verifikasi input harian
+      document.getElementById('daily-day-title').textContent = 'Verifikasi Laporan';
+      document.getElementById('daily-page-subtitle').textContent = 'Input harian semua kandang';
+    }
     _populateTSKandangFilter();
     renderTSReportHistory();
     return;
