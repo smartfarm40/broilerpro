@@ -94,24 +94,24 @@ const AuthService = {
     await AUTH.clearSession();
   },
 
-  // ---- Ambil semua user (untuk manajemen tim — hanya owner) ----
+  // ---- Ambil semua user (untuk manajemen tim — hanya owner/manager) ----
   async getMembers() {
     const sb = this._sb();
     if (!sb) return [];
     if (!AUTH.can('member.view')) return [];
 
+    // Ambil semua profiles — sistem ini single-tenant, semua user adalah satu tim
     const { data, error } = await sb
       .from('profiles')
-      .select('id, nama, email, role, kandang_id, created_at, tenant_id')
-      .eq('tenant_id', AUTH.tenantId)
+      .select('id, nama, email, role, kandang_id, created_at')
       .order('created_at', { ascending: true });
 
     if (error) { console.warn('[AUTH] getMembers error:', error.message); return []; }
     return (data || []).map(p => ({
-      user_id:   p.id,
-      full_name: p.nama || '',
-      email:     p.email || '',
-      role:      p.role || 'viewer',
+      user_id:    p.id,
+      full_name:  p.nama || '',
+      email:      p.email || '',
+      role:       p.role || 'viewer',
       kandang_id: p.kandang_id,
       created_at: p.created_at
     }));
