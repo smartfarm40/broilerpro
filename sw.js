@@ -1,6 +1,6 @@
 // ===== SERVICE WORKER =====
 // Versi cache — naikkan angka ini setiap kali ada perubahan file
-const CACHE_VERSION = 'broilertrack-v18';
+const CACHE_VERSION = 'broilerpro-v19';
 const CACHE_NAME    = CACHE_VERSION;
 
 const ASSETS = [
@@ -22,6 +22,7 @@ const ASSETS = [
   './manifest.json',
   './icons/ayam.svg',
   './icons/karung-pakan.svg',
+  './icons/broiler-pro.PNG',
   'https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Space+Grotesk:wght@400;600&display=swap',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
   './js/leaflet.min.js',

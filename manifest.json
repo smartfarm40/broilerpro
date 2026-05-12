@@ -1,24 +1,50 @@
 {
-  "name": "BroilerTrack - Laporan Harian Ayam",
-  "short_name": "BroilerTrack",
-  "description": "Aplikasi manajemen dan laporan harian peternakan ayam broiler",
+  "name": "BroilerPro - Manajemen Peternakan Ayam",
+  "short_name": "BroilerPro",
+  "description": "Aplikasi manajemen dan laporan harian peternakan ayam broiler profesional",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#3B82F6",
+  "background_color": "#ffffff",
   "theme_color": "#3B82F6",
   "orientation": "portrait",
   "icons": [
     {
+      "src": "icons/broiler-pro.PNG",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/broiler-pro.PNG",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/broiler-pro.PNG",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icons/broiler-pro.PNG",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
     }
   ]
 }

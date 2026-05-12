@@ -131,18 +131,27 @@ const AuthService = {
     return { success: true };
   },
 
-  // ---- Hapus anggota (reset ke role viewer / hapus kandang_id) ----
+  // ---- Hapus anggota dari organisasi ----
   async removeMember({ userId }) {
     const sb = this._sb();
     if (!sb) return { error: 'Supabase tidak tersedia' };
     if (!AUTH.can('member.remove')) return { error: 'Tidak punya izin' };
     if (userId === AUTH.userId) return { error: 'Tidak bisa hapus diri sendiri' };
 
-    // Set role ke 'staff' dan lepas kandang — tidak hapus akun Supabase Auth
+    // Opsi 1: Soft delete - Set tenant_id ke null (anggota keluar dari organisasi)
+    // Opsi 2: Hard delete - Hapus dari profiles (tidak direkomendasikan)
+    // Opsi 3: Set role ke 'viewer' dan lepas dari kandang (current implementation)
+    
+    // Implementasi: Lepas anggota dari organisasi dengan set tenant_id = null
     const { error } = await sb
       .from('profiles')
-      .update({ role: 'staff', kandang_id: null })
-      .eq('id', userId);
+      .update({ 
+        tenant_id: null,  // Lepas dari organisasi
+        role: 'viewer',   // Reset role
+        kandang_id: null  // Lepas dari kandang
+      })
+      .eq('id', userId)
+      .eq('tenant_id', AUTH.tenantId); // Pastikan hanya hapus anggota dari tenant sendiri
 
     if (error) return { error: error.message };
     return { success: true };

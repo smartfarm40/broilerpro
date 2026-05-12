@@ -39,9 +39,9 @@ SELECT assign_permissions_to_role('owner', ARRAY[
   'report.view', 'report.export', 'report.cost'
 ]);
 
--- MANAGER: Full Access
+-- MANAGER: Full Access KECUALI DELETE KANDANG
 SELECT assign_permissions_to_role('manager', ARRAY[
-  'kandang.view', 'kandang.view_all', 'kandang.create', 'kandang.edit', 'kandang.delete',
+  'kandang.view', 'kandang.view_all', 'kandang.create', 'kandang.edit',
   'log.view', 'log.create', 'log.edit', 'log.delete', 'log.complete',
   'cost.view', 'cost.edit', 'cost.report',
   'delivery.view', 'delivery.create', 'delivery.edit', 'delivery.delete',

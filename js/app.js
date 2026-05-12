@@ -785,6 +785,8 @@ function renderFlock() {
   const list = document.getElementById('flock-list');
   if (!list) return;
   const flocks = currentFlockTab === 'active' ? getActiveFlocks() : getHistoryFlocks();
+  const isOwner = AUTH.role === 'owner';
+  
   list.innerHTML = flocks.map(f => {
     const startDate = new Date(f.startDate);
     const fmt = startDate.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
@@ -802,11 +804,26 @@ function renderFlock() {
         '</div>';
     }
 
+    // Tombol aksi (Edit & Hapus - hanya Owner yang bisa hapus)
+    const flockId = f._dbId || f.id || '';
+    let actionButtons = '';
+    if (AUTH.can('kandang.edit')) {
+      actionButtons += '<button class="flock-action-btn flock-action-btn--edit" onclick="editFlock(\'' + flockId + '\')" title="Edit Kandang">' +
+        '<span class="material-icons-round">edit</span></button>';
+    }
+    if (isOwner) {
+      actionButtons += '<button class="flock-action-btn flock-action-btn--delete" onclick="deleteFlock(\'' + flockId + '\', \'' + f.name + '\')" title="Hapus Kandang">' +
+        '<span class="material-icons-round">delete</span></button>';
+    }
+
     return '<div class="flock-card">' +
       '<div class="flock-card-header">' +
       '<div><div class="flock-name">' + f.name + '</div>' +
       '<div class="flock-breed">' + f.breed + (f.officer ? ' &bull; ' + f.officer : '') + '</div></div>' +
-      '<span class="flock-badge ' + (f.active ? 'active' : 'inactive') + '">' + (f.active ? 'Aktif' : 'Selesai') + '</span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span class="flock-badge ' + (f.active ? 'active' : 'inactive') + '">' + (f.active ? 'Aktif' : 'Selesai') + '</span>' +
+      (actionButtons ? '<div class="flock-actions">' + actionButtons + '</div>' : '') +
+      '</div></div>' +
       '<div class="flock-stats">' +
       '<div class="flock-stat"><div class="flock-stat-val">' + f.qty.toLocaleString('id-ID') + '</div><div class="flock-stat-lbl">Ekor</div></div>' +
       '<div class="flock-stat"><div class="flock-stat-val">H' + f.age + '</div><div class="flock-stat-lbl">Umur</div></div>' +
@@ -1177,15 +1194,18 @@ async function renderTeamMembers() {
 
 // ---- Helper: bangun kotak link undangan dengan tombol salin ----
 function _buildInviteLinkBox(link, label) {
-  return '<div style="margin-top:6px">' +
-    '<div style="font-size:12px;color:var(--secondary-text);margin-bottom:4px">' + label + '</div>' +
-    '<div style="display:flex;align-items:center;gap:6px;background:var(--surface-variant);border:1px solid var(--outline-variant);border-radius:8px;padding:8px 10px">' +
-    '<span style="font-size:11px;color:var(--secondary-text);flex:1;word-break:break-all;line-height:1.4" id="invite-link-text">' + link + '</span>' +
+  return '<div style="margin-top:10px;background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:12px">' +
+    '<div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:8px">' + label + '</div>' +
+    '<div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--outline-variant);border-radius:8px;padding:10px 12px">' +
+    '<span style="font-size:12px;color:var(--secondary-text);flex:1;word-break:break-all;line-height:1.5" id="invite-link-text">' + link + '</span>' +
     '<button onclick="copyInviteLink()" title="Salin link" ' +
-    'style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:12px">' +
-    '<span class="material-icons-round" style="font-size:16px">content_copy</span>Salin</button>' +
+    'style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;box-shadow:0 2px 4px rgba(59,130,246,0.2)">' +
+    '<span class="material-icons-round" style="font-size:18px">content_copy</span>Salin</button>' +
     '</div>' +
-    '<div style="font-size:11px;color:var(--hint);margin-top:4px">⚠️ Link berlaku 24 jam dan hanya bisa dipakai sekali.</div>' +
+    '<button onclick="shareToWhatsApp()" ' +
+    'style="width:100%;margin-top:8px;background:#25D366;color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600">' +
+    '<span class="material-icons-round" style="font-size:18px">send</span>Kirim via WhatsApp</button>' +
+    '<div style="font-size:11px;color:var(--hint);margin-top:8px;text-align:center">⚠️ Link berlaku 24 jam dan hanya bisa dipakai sekali.</div>' +
     '</div>';
 }
 
@@ -1194,7 +1214,7 @@ function copyInviteLink() {
   if (!el) return;
   const link = el.textContent.trim();
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(link).then(() => showToast('Link disalin ke clipboard'));
+    navigator.clipboard.writeText(link).then(() => showToast('✓ Link disalin ke clipboard'));
   } else {
     // Fallback untuk browser lama
     const ta = document.createElement('textarea');
@@ -1205,8 +1225,24 @@ function copyInviteLink() {
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    showToast('Link disalin ke clipboard');
+    showToast('✓ Link disalin ke clipboard');
   }
+}
+
+function shareToWhatsApp() {
+  const el = document.getElementById('invite-link-text');
+  if (!el) return;
+  const link = el.textContent.trim();
+  
+  // Pesan template untuk WhatsApp
+  const message = `Halo! Anda diundang untuk bergabung ke BroilerTrack.\n\nKlik link berikut untuk mendaftar:\n${link}\n\n⚠️ Link berlaku 24 jam dan hanya bisa dipakai sekali.`;
+  
+  // Encode message untuk URL
+  const encodedMessage = encodeURIComponent(message);
+  
+  // Buka WhatsApp (web atau app)
+  const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+  window.open(whatsappUrl, '_blank');
 }
 
 function toggleInviteForm() {
@@ -1222,11 +1258,34 @@ function toggleInviteForm() {
 }
 
 async function removeMember(userId) {
-  if (!confirm('Hapus anggota ini dari organisasi?')) return;
+  // Cari info anggota yang akan dihapus
+  const members = await AuthService.getMembers();
+  const member = members.find(m => m.user_id === userId);
+  const memberName = member ? (member.full_name || member.email) : 'anggota ini';
+  
+  // Konfirmasi dengan peringatan
+  const confirmed = confirm(
+    '⚠️ HAPUS ANGGOTA\n\n' +
+    'Anda akan menghapus: ' + memberName + '\n\n' +
+    'Anggota ini akan:\n' +
+    '• Dikeluarkan dari organisasi\n' +
+    '• Kehilangan akses ke semua data\n' +
+    '• Tidak bisa login ke aplikasi ini\n\n' +
+    'Lanjutkan?'
+  );
+  
+  if (!confirmed) return;
+  
+  showToast('⏳ Menghapus anggota...');
   const result = await AuthService.removeMember({ userId });
-  if (result.error) { showToast(result.error); return; }
+  
+  if (result.error) { 
+    showToast('❌ Gagal: ' + result.error); 
+    return; 
+  }
+  
   renderTeamMembers();
-  showToast('Anggota berhasil dihapus');
+  showToast('✓ ' + memberName + ' berhasil dihapus dari organisasi');
 }
 
 async function doInvite() {
@@ -1828,6 +1887,94 @@ function openInMaps() {
 function openFlockInMaps(lat, lng, name) {
   const label = encodeURIComponent(name || 'Kandang');
   window.open('https://www.google.com/maps?q=' + lat + ',' + lng + '&label=' + label, '_blank');
+}
+
+// ---- Edit Kandang ----
+function editFlock(flockId) {
+  if (!AUTH.can('kandang.edit')) {
+    showToast('⚠️ Tidak punya izin untuk edit kandang');
+    return;
+  }
+  
+  const flock = DB.flocks.find(f => (f._dbId || f.id) === flockId);
+  if (!flock) {
+    showToast('⚠️ Kandang tidak ditemukan');
+    return;
+  }
+  
+  // TODO: Implementasi modal edit kandang
+  // Untuk sementara, tampilkan alert
+  showToast('🚧 Fitur edit kandang akan segera hadir');
+}
+
+// ---- Hapus Kandang (Hanya Owner) ----
+async function deleteFlock(flockId, flockName) {
+  // Double check: hanya owner yang bisa hapus
+  if (AUTH.role !== 'owner') {
+    showToast('⚠️ Hanya Owner yang bisa menghapus kandang');
+    return;
+  }
+  
+  const flock = DB.flocks.find(f => (f._dbId || f.id) === flockId);
+  if (!flock) {
+    showToast('⚠️ Kandang tidak ditemukan');
+    return;
+  }
+  
+  // Konfirmasi dengan peringatan keras
+  const confirmed = confirm(
+    '⚠️ PERINGATAN: HAPUS KANDANG\n\n' +
+    'Anda akan menghapus kandang: ' + flockName + '\n\n' +
+    'SEMUA DATA TERKAIT AKAN DIHAPUS:\n' +
+    '• Laporan harian\n' +
+    '• Target periode\n' +
+    '• Jadwal obat/vaksin\n' +
+    '• Pengiriman\n' +
+    '• Biaya produksi\n\n' +
+    'Tindakan ini TIDAK BISA DIBATALKAN!\n\n' +
+    'Ketik nama kandang untuk konfirmasi.'
+  );
+  
+  if (!confirmed) return;
+  
+  // Minta konfirmasi kedua dengan input nama kandang
+  const inputName = prompt('Ketik nama kandang "' + flockName + '" untuk konfirmasi penghapusan:');
+  if (inputName !== flockName) {
+    showToast('❌ Nama kandang tidak cocok. Penghapusan dibatalkan.');
+    return;
+  }
+  
+  // Proses penghapusan
+  showToast('⏳ Menghapus kandang...');
+  
+  try {
+    // Hapus dari Supabase jika ada _dbId
+    if (flock._dbId) {
+      const { error } = await supabase
+        .from('kandangs')
+        .delete()
+        .eq('id', flock._dbId);
+      
+      if (error) throw error;
+    }
+    
+    // Hapus dari local DB
+    const index = DB.flocks.findIndex(f => (f._dbId || f.id) === flockId);
+    if (index !== -1) {
+      DB.flocks.splice(index, 1);
+    }
+    
+    // Hapus log terkait
+    DB.dailyLogs = DB.dailyLogs.filter(log => log._kandangId !== flockId);
+    
+    saveDB();
+    showToast('✓ Kandang "' + flockName + '" berhasil dihapus');
+    renderFlock();
+    
+  } catch (error) {
+    console.error('[deleteFlock] Error:', error);
+    showToast('❌ Gagal menghapus kandang: ' + error.message);
+  }
 }
 
 
