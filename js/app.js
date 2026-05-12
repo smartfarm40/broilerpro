@@ -1116,6 +1116,24 @@ function renderSettings() {
 
     const btnInvite = document.getElementById('btn-show-invite');
     if (btnInvite) btnInvite.style.display = AUTH.can('member.invite') ? '' : 'none';
+
+    // Sesuaikan opsi role undangan berdasarkan role yang login
+    // Hanya owner yang bisa undang sebagai manager
+    const inviteRoleSel = document.getElementById('invite-role');
+    if (inviteRoleSel) {
+      const isOwner = AUTH.role === 'owner';
+      // Hapus opsi manager jika sudah ada
+      Array.from(inviteRoleSel.options).forEach(opt => {
+        if (opt.value === 'manager') opt.remove();
+      });
+      // Tambahkan manager di posisi pertama hanya untuk owner
+      if (isOwner) {
+        const managerOpt = document.createElement('option');
+        managerOpt.value = 'manager';
+        managerOpt.textContent = 'Manajer';
+        inviteRoleSel.insertBefore(managerOpt, inviteRoleSel.firstChild);
+      }
+    }
   }
 }
 
