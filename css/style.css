@@ -236,15 +236,16 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
-  overflow-y: auto;
+  /* Flex column: header & footer sticky, hanya body yang scroll */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   position: relative;
   box-shadow: 0 20px 60px rgba(0,0,0,.25);
 }
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end;justify-content:center}
-.modal-card{background:var(--surface);border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
-.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--outline-variant)}
-.modal-body{display:flex;flex-direction:column;padding:16px 20px;gap:12px}
-.modal-footer{display:flex;gap:10px;padding:12px 20px 16px;border-top:1px solid var(--outline-variant)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--outline-variant);flex-shrink:0}
+.modal-body{display:flex;flex-direction:column;padding:16px 20px;gap:12px;overflow-y:auto;flex:1}
+.modal-footer{display:flex;gap:10px;padding:12px 20px 16px;border-top:1px solid var(--outline-variant);flex-shrink:0}
 .modal-footer .btn{flex:1}
 .icon-btn{background:none;border:none;cursor:pointer;color:var(--secondary-text);display:flex;align-items:center;justify-content:center;padding:4px}
 /* Toast */
@@ -969,10 +970,8 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
   border-radius: 10px;
 }
 
-/* Modal flock — scroll tapi jangan potong peta */
+/* Modal flock — body sudah scroll via flex layout di .modal-content */
 .modal-content .modal-body {
-  max-height: 80vh;
-  overflow-y: auto;
   overflow-x: hidden;
 }
 
@@ -1297,7 +1296,7 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
   max-width: 520px;
   width: calc(100vw - 32px);
   max-height: 88vh;
-  overflow-y: auto;
+  overflow: hidden; /* flex layout yang handle scroll, bukan container */
 }
 
 /* Form Textarea */
