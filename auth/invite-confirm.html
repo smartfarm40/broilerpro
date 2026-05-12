@@ -148,7 +148,7 @@
     const hashRefresh  = hash.get('refresh_token');
     const hashType     = hash.get('type');
 
-    // Cek token dari query params: ?token=xxx&type=invite (dari /auth/v1/verify redirect)
+    // Cek token dari query params: ?token=xxx&type=invite
     const params       = new URLSearchParams(location.search);
     const queryToken   = params.get('token');
     const queryType    = params.get('type');
@@ -156,51 +156,45 @@
     const hasHashToken  = hashToken && (hashType === 'invite' || hashType === 'magiclink' || hashType === 'recovery');
     const hasQueryToken = queryToken && (queryType === 'invite' || queryType === 'magiclink');
 
-    if (hasHashToken || hasQueryToken) {
-      // Ada token undangan — sign out session yang ada dulu agar tidak tertukar
+    if (hasHashToken) {
+      // Token ada di hash — sign out dulu, lalu set session baru
       await sb.auth.signOut();
-
-      if (hasHashToken) {
-        // Token ada di hash — set session langsung
-        const { data, error: setErr } = await sb.auth.setSession({
-          access_token:  hashToken,
-          refresh_token: hashRefresh || ''
-        });
-
-        if (setErr || !data.session) {
-          showError('Link undangan tidak valid atau sudah kadaluarsa. Minta owner untuk mengirim ulang undangan.');
-          return;
-        }
-
-        history.replaceState(null, '', location.pathname);
-        await initCompleteForm(data.session);
+      const { data, error: setErr } = await sb.auth.setSession({
+        access_token:  hashToken,
+        refresh_token: hashRefresh || ''
+      });
+      if (setErr || !data.session) {
+        showError('Link undangan tidak valid atau sudah kadaluarsa. Minta owner untuk mengirim ulang undangan.');
         return;
       }
-
-      if (hasQueryToken) {
-        // Token ada di query params — verifikasi via OTP
-        const { data, error: verifyErr } = await sb.auth.verifyOtp({
-          token_hash: queryToken,
-          type: queryType === 'invite' ? 'invite' : 'magiclink'
-        });
-
-        if (verifyErr || !data.session) {
-          showError('Link undangan tidak valid atau sudah kadaluarsa. Minta owner untuk mengirim ulang undangan.');
-          return;
-        }
-
-        history.replaceState(null, '', location.pathname);
-        await initCompleteForm(data.session);
-        return;
-      }
+      history.replaceState(null, '', location.pathname);
+      await initCompleteForm(data.session);
+      return;
     }
 
-    // Tidak ada token di URL — cek apakah ada session aktif
+    if (hasQueryToken) {
+      // Token ada di query params — sign out dulu, lalu verifikasi
+      await sb.auth.signOut();
+      const { data, error: verifyErr } = await sb.auth.verifyOtp({
+        token_hash: queryToken,
+        type: queryType === 'invite' ? 'invite' : 'magiclink'
+      });
+      if (verifyErr || !data.session) {
+        showError('Link undangan tidak valid atau sudah kadaluarsa. Minta owner untuk mengirim ulang undangan.');
+        return;
+      }
+      history.replaceState(null, '', location.pathname);
+      await initCompleteForm(data.session);
+      return;
+    }
+
+    // Tidak ada token di URL — Supabase mungkin sudah set session via redirect
+    // Ambil session yang ada
     const { data: { session }, error } = await sb.auth.getSession();
 
     if (session && !error) {
-      // Pastikan ini bukan session Owner yang salah masuk
-      // Tampilkan form tapi dengan peringatan
+      // Cek apakah ini session dari link undangan (email_confirmed_at baru atau belum punya password)
+      // Tampilkan form — user bisa set password
       await initCompleteForm(session);
       return;
     }
