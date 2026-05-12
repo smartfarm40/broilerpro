@@ -115,7 +115,8 @@ function applyRoleUI() {
     'nav-health':   AUTH.can('health.view')    && role !== 'staff',
     'nav-delivery': AUTH.can('delivery.view'),
     'nav-cost':     AUTH.can('cost.view'),
-    'nav-visits':   (AUTH.can('visit.view') || AUTH.can('visit.create')) && role !== 'staff'
+    'nav-visits':   (AUTH.can('visit.view') || AUTH.can('visit.create')) && role !== 'staff',
+    'nav-panen':    AUTH.can('panen.view')
   };
   Object.entries(navRules).forEach(([id, show]) => {
     const el = document.getElementById(id);
@@ -440,6 +441,7 @@ function navigateTo(page) {
   if (page === 'flock') renderFlock();
   if (page === 'growth') { setTimeout(initGrowthCharts, 100); }
   if (page === 'inventory') renderInventory();
+  if (page === 'panen') { loadPanen().then(() => renderPanen()); }
   if (page === 'settings') renderSettings();
   document.getElementById('main-content').scrollTop = 0;
 }
