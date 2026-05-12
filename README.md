@@ -46,25 +46,48 @@ https://broilerpro.vercel.app
 ```
 broilertrack-pwa/
 ├── index.html              # Main app (semua halaman)
+├── panen.html              # Halaman panen
 ├── sw.js                   # Service Worker
 ├── manifest.json           # PWA manifest
 ├── vercel.json             # Vercel config
-├── auth/                   # Halaman login & register
-├── css/                    # Stylesheet
-├── js/
+├── .env.local              # Environment variables
+├── auth/                   # Halaman auth (login, register, invite)
+│   ├── login.html
+│   ├── register.html
+│   ├── invite.html
+│   ├── invite-confirm.html
+│   └── auth.css
+├── css/                    # Stylesheets
+│   ├── style.css
+│   └── leaflet.min.css
+├── js/                     # JavaScript modules
 │   ├── app.js              # Main app logic
 │   ├── data.js             # Data store & Supabase sync
-│   ├── ts-visits.js        # Modul kunjungan TS
-│   ├── period-targets.js   # Modul target periode
-│   ├── medication.js       # Modul program kesehatan
-│   ├── deliveries.js       # Modul pengiriman
-│   ├── production-costs.js # Modul cost produksi
+│   ├── charts.js           # Chart.js wrapper
+│   ├── panen.js            # Panen module
+│   ├── ts-visits.js        # Kunjungan TS module
+│   ├── period-targets.js   # Target periode module
+│   ├── medication.js       # Program kesehatan module
+│   ├── deliveries.js       # Pengiriman module
+│   ├── production-costs.js # Cost produksi module
 │   ├── supabase-client.js  # Supabase client
 │   ├── permission-guards.js# UI permission guards
-│   └── auth/               # Auth service & store
-├── supabase/
+│   ├── update-manager.js   # PWA update manager
+│   ├── leaflet.min.js      # Leaflet maps
+│   └── auth/               # Auth services
+│       ├── auth-service.js
+│       └── auth-store.js
+├── supabase/               # Database
+│   ├── config.toml         # Supabase config
 │   └── migrations/         # Database migrations
-└── icons/                  # App icons
+├── types/                  # TypeScript types
+│   └── database.types.ts
+├── icons/                  # PWA icons
+│   ├── icon-192.png
+│   ├── icon-512.png
+│   ├── ayam.svg
+│   └── karung-pakan.svg
+└── *.md                    # Documentation files
 ```
 
 ## ⚙️ Setup Development

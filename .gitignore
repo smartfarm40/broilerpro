@@ -1,7 +1,3 @@
-# Netlify (tidak dipakai lagi)
-.netlify
-netlify.toml
-
 # Environment variables
 .env
 .env.local
@@ -17,3 +13,41 @@ Thumbs.db
 # Editor
 .vscode/
 .kiro/
+
+# Documentation (kecuali README.md)
+*.md
+!README.md
+
+# Development & Testing Tools
+debug*.html
+test*.html
+auto*.html
+generate*.html
+playground.html
+sandbox.html
+
+# Examples & Demos
+examples/
+demos/
+samples/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# Logs
+*.log
+logs/
+
+# Node modules
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build output
+dist/
+build/
+.cache/
