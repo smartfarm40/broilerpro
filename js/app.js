@@ -39,7 +39,7 @@ window.addEventListener('load', async () => {
   _hideSplash();
 
   // Load data di background (non-blocking)
-  Promise.all([loadDB(), loadTargets()])
+  Promise.all([loadDB(), loadTargets(), loadFarmSettings()])
     .then(() => {
       // Refresh dashboard setelah data masuk
       if (currentPage === 'dashboard') renderDashboard();
@@ -1040,14 +1040,190 @@ function applyTheme() {
   document.getElementById('toggle-dark') && (document.getElementById('toggle-dark').checked = DB.settings.darkMode);
 }
 
-function editFarmName() {
-  const name = prompt('Nama Peternakan:', DB.settings.farmName);
-  if (name && name.trim()) {
-    DB.settings.farmName = name.trim();
-    saveSettings();
-    renderSettings();
-    showToast('Nama peternakan diperbarui');
+// ---- Farm Settings ----
+let _farmSettingsCache = null;
+
+async function loadFarmSettings() {
+  const sb = AUTH.getSupabase();
+  if (!sb) return;
+  try {
+    const { data } = await sb
+      .from('farm_settings')
+      .select('*')
+      .single();
+    if (data) {
+      _farmSettingsCache = data;
+      DB.settings.farmName = data.farm_name || DB.settings.farmName;
+      // Tampilkan foto farm jika ada
+      _applyFarmPhoto(data.farm_photo);
+    }
+  } catch (e) {
+    console.warn('[Farm] loadFarmSettings:', e.message);
   }
+}
+
+function _applyFarmPhoto(photoUrl) {
+  if (!photoUrl) return;
+  // Tampilkan di header avatar jika ada
+  const avatarEl = document.getElementById('header-avatar-icon');
+  if (avatarEl && avatarEl.parentElement) {
+    avatarEl.parentElement.style.backgroundImage = `url(${photoUrl})`;
+    avatarEl.parentElement.style.backgroundSize = 'cover';
+    avatarEl.style.display = 'none';
+  }
+  // Tampilkan di settings farm photo preview
+  const previewEl = document.getElementById('farm-photo-preview');
+  if (previewEl) {
+    previewEl.src = photoUrl;
+    previewEl.style.display = 'block';
+  }
+}
+
+async function saveFarmSettingsToDB(updates) {
+  const sb = AUTH.getSupabase();
+  if (!sb) return { error: 'Supabase tidak tersedia' };
+  try {
+    const { data, error } = await sb
+      .from('farm_settings')
+      .upsert({ owner_id: AUTH.userId, ...updates }, { onConflict: 'owner_id' })
+      .select()
+      .single();
+    if (error) return { error: error.message };
+    _farmSettingsCache = data;
+    return { data };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+function editFarmName() {
+  // Buat modal edit nama farm
+  const current = DB.settings.farmName || 'BroilerTrack';
+
+  // Hapus modal lama jika ada
+  const existing = document.getElementById('modal-edit-farm-name');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-edit-farm-name';
+  modal.className = 'modal';
+  modal.style.cssText = 'display:flex';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Nama Peternakan</h3>
+        <button class="modal-close" onclick="document.getElementById('modal-edit-farm-name').remove()">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-field">
+          <label class="form-label">Nama Peternakan</label>
+          <input type="text" id="input-farm-name" class="form-input"
+            value="${current}" placeholder="Nama peternakan Anda" maxlength="50" />
+        </div>
+        <div class="form-field" style="margin-top:16px">
+          <label class="form-label">Foto / Logo Peternakan</label>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+            <div id="farm-photo-wrap" style="width:72px;height:72px;border-radius:12px;border:2px dashed var(--outline-variant);overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--surface-variant);flex-shrink:0">
+              <img id="farm-photo-preview" style="width:100%;height:100%;object-fit:cover;display:none" />
+              <span class="material-icons-round" id="farm-photo-icon" style="color:var(--hint);font-size:28px">add_photo_alternate</span>
+            </div>
+            <div style="flex:1">
+              <button class="btn btn-outline" onclick="document.getElementById('farm-photo-input').click()" style="width:100%">
+                <span class="material-icons-round">upload</span>
+                Pilih Foto
+              </button>
+              <input type="file" id="farm-photo-input" accept="image/*" style="display:none" onchange="onFarmPhotoSelected(this)" />
+              <div style="font-size:11px;color:var(--hint);margin-top:6px">JPG/PNG, maks 500KB. Akan ditampilkan di header aplikasi.</div>
+            </div>
+          </div>
+        </div>
+        <div id="farm-edit-error" style="color:var(--error);font-size:13px;margin-top:8px;display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-edit-farm-name').remove()">Batal</button>
+        <button class="btn btn-primary" onclick="saveFarmName()">
+          <span class="material-icons-round">save</span>
+          Simpan
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Tampilkan foto yang sudah ada
+  if (_farmSettingsCache?.farm_photo) {
+    const preview = document.getElementById('farm-photo-preview');
+    const icon    = document.getElementById('farm-photo-icon');
+    if (preview) { preview.src = _farmSettingsCache.farm_photo; preview.style.display = 'block'; }
+    if (icon)    icon.style.display = 'none';
+  }
+
+  setTimeout(() => document.getElementById('input-farm-name')?.focus(), 100);
+}
+
+// Saat user pilih foto
+function onFarmPhotoSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  if (file.size > 500 * 1024) {
+    const errEl = document.getElementById('farm-edit-error');
+    if (errEl) { errEl.textContent = 'Ukuran foto maksimal 500KB'; errEl.style.display = 'block'; }
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    const preview = document.getElementById('farm-photo-preview');
+    const icon    = document.getElementById('farm-photo-icon');
+    if (preview) { preview.src = dataUrl; preview.style.display = 'block'; }
+    if (icon)    icon.style.display = 'none';
+    // Simpan sementara di input hidden
+    input.dataset.dataUrl = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveFarmName() {
+  const nameInput  = document.getElementById('input-farm-name');
+  const photoInput = document.getElementById('farm-photo-input');
+  const errEl      = document.getElementById('farm-edit-error');
+  const btn        = document.querySelector('#modal-edit-farm-name .btn-primary');
+
+  const name = nameInput?.value.trim();
+  if (!name) {
+    if (errEl) { errEl.textContent = 'Nama peternakan tidak boleh kosong'; errEl.style.display = 'block'; }
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-round spin">refresh</span> Menyimpan...'; }
+
+  const updates = { farm_name: name };
+
+  // Tambahkan foto jika ada yang baru dipilih
+  const newPhoto = photoInput?.dataset.dataUrl;
+  if (newPhoto) updates.farm_photo = newPhoto;
+
+  const result = await saveFarmSettingsToDB(updates);
+
+  if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-icons-round">save</span> Simpan'; }
+
+  if (result.error) {
+    if (errEl) { errEl.textContent = 'Gagal menyimpan: ' + result.error; errEl.style.display = 'block'; }
+    return;
+  }
+
+  // Update lokal
+  DB.settings.farmName = name;
+  saveSettings();
+  if (newPhoto) _applyFarmPhoto(newPhoto);
+
+  document.getElementById('modal-edit-farm-name')?.remove();
+  renderSettings();
+  showToast('✓ Nama peternakan berhasil diperbarui');
 }
 
 function changeMeasurement() {
@@ -1177,11 +1353,28 @@ async function renderTeamMembers() {
     el.innerHTML = '<div style="color:var(--hint);font-size:13px;padding:8px 0">Belum ada anggota lain</div>';
     return;
   }
-  const roleLabel = { owner:'Pemilik', ts:'Technical Service', kandang:'Petugas Kandang', staff:'Staff' };
+
+  // Urutkan: owner dulu, lalu sisanya berdasarkan abjad nama
+  const roleOrder = { owner: 0, manager: 1, ts: 2, staff: 3, operator: 4, viewer: 5 };
+  members.sort((a, b) => {
+    const ro = (roleOrder[a.role] ?? 9) - (roleOrder[b.role] ?? 9);
+    if (ro !== 0) return ro;
+    return (a.full_name || '').localeCompare(b.full_name || '', 'id');
+  });
+
+  const roleLabel = {
+    owner:    'Pemilik',
+    manager:  'Manajer',
+    ts:       'Technical Service',
+    staff:    'Staff Kantor',
+    operator: 'Operator',
+    viewer:   'Viewer'
+  };
+
   el.innerHTML = members.map(m => {
     const initials = (m.full_name || m.email || '?').charAt(0).toUpperCase();
     const isMe     = m.user_id === AUTH.userId;
-    const canEdit  = AUTH.can('member.edit') && !isMe;
+    const canRemove = AUTH.can('member.remove') && !isMe && m.role !== 'owner';
     return '<div class="team-member-item">' +
       '<div class="team-member-avatar">' + initials + '</div>' +
       '<div class="team-member-info">' +
@@ -1189,7 +1382,7 @@ async function renderTeamMembers() {
         '<div class="team-member-email">' + (m.email || '') + '</div>' +
       '</div>' +
       '<span class="team-role-badge ' + m.role + '">' + (roleLabel[m.role] || m.role) + '</span>' +
-      (canEdit ? '<button class="icon-btn" onclick="removeMember(\'' + m.user_id + '\')" title="Hapus anggota" style="color:var(--error);margin-left:4px"><span class="material-icons-round" style="font-size:18px">person_remove</span></button>' : '') +
+      (canRemove ? '<button class="icon-btn" onclick="removeMember(\'' + m.user_id + '\')" title="Hapus anggota" style="color:var(--error);margin-left:4px"><span class="material-icons-round" style="font-size:18px">person_remove</span></button>' : '') +
       '</div>';
   }).join('');
 }
