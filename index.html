@@ -1168,11 +1168,16 @@
           <div class="location-map-hint">
             <span class="material-icons-round" style="font-size:16px;color:var(--primary)">touch_app</span>
             Klik pada peta untuk menentukan lokasi kandang
+            <span id="map-layer-toggle" class="map-layer-btn" onclick="toggleMapLayer()" title="Ganti tampilan peta">
+              <span class="material-icons-round" style="font-size:14px">satellite</span>
+              Satelit
+            </span>
           </div>
           <div id="flock-map" class="flock-map-container"></div>
           <div id="map-coords-display" class="map-coords-display hidden">
             <span class="material-icons-round" style="font-size:15px;color:var(--success)">location_on</span>
             <span id="map-coords-text"></span>
+            <span id="map-saved-badge" class="map-saved-badge hidden">✓ Tersimpan</span>
             <button class="link-btn" onclick="clearFlockLocation()" style="color:var(--error);margin-left:auto">
               <span class="material-icons-round" style="font-size:14px">close</span>
             </button>

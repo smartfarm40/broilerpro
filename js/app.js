@@ -1584,11 +1584,15 @@ let _flockMapLat = null;   // koordinat terpilih
 let _flockMapLng = null;
 
 // ---- OWNER: Inisialisasi peta Leaflet ----
+// ── Layer tiles ──────────────────────────────────────────────────────────────
+let _mapCurrentLayer = 'street'; // 'street' | 'satellite'
+let _streetLayer     = null;
+let _satelliteLayer  = null;
+
 function initFlockMap() {
   const el = document.getElementById('flock-map');
   if (!el) return;
 
-  // Cek Leaflet tersedia
   if (typeof L === 'undefined') {
     el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--secondary-text);font-size:13px;padding:16px;text-align:center">Peta tidak tersedia. Periksa koneksi internet.</div>';
     return;
@@ -1599,34 +1603,53 @@ function initFlockMap() {
     try { _flockMap.remove(); } catch(e) {}
     _flockMap    = null;
     _flockMarker = null;
+    _streetLayer = null;
+    _satelliteLayer = null;
   }
 
-  // Paksa ukuran eksplisit — kritis untuk mobile
-  el.style.height    = '220px';
-  el.style.minHeight = '220px';
+  // Paksa ukuran
+  el.style.height    = '340px';
+  el.style.minHeight = '340px';
   el.style.display   = 'block';
 
   try {
     _flockMap = L.map('flock-map', {
       zoomControl:        true,
       attributionControl: true,
-      tap:                true,   // touch support mobile
-      tapTolerance:       15      // toleransi tap lebih besar di HP
+      tap:                true,
+      tapTolerance:       15
     }).setView([-2.5, 118.0], 5);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // ── Layer 1: Street (OpenStreetMap) ──────────────────────────────────
+    _streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19
-    }).addTo(_flockMap);
+    });
 
-    // invalidateSize beberapa kali untuk memastikan render benar di mobile
+    // ── Layer 2: Satelit (Esri World Imagery — gratis, tidak perlu API key) ──
+    _satelliteLayer = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        attribution: '© <a href="https://www.esri.com">Esri</a>',
+        maxZoom: 19
+      }
+    );
+
+    // Mulai dengan street layer
+    _streetLayer.addTo(_flockMap);
+    _mapCurrentLayer = 'street';
+
+    // Update toggle button
+    _updateLayerToggleBtn();
+
+    // invalidateSize untuk mobile
     setTimeout(() => { if (_flockMap) _flockMap.invalidateSize(); }, 100);
     setTimeout(() => { if (_flockMap) _flockMap.invalidateSize(); }, 400);
     setTimeout(() => { if (_flockMap) _flockMap.invalidateSize(); }, 800);
 
-    // Klik / tap peta → pin lokasi
+    // Klik peta → pin lokasi + auto-save
     _flockMap.on('click', function(e) {
-      setFlockMapLocation(e.latlng.lat, e.latlng.lng);
+      setFlockMapLocation(e.latlng.lat, e.latlng.lng, true); // true = auto-save
     });
 
   } catch(err) {
@@ -1635,29 +1658,76 @@ function initFlockMap() {
   }
 }
 
+// Toggle antara street dan satelit
+function toggleMapLayer() {
+  if (!_flockMap) return;
+  if (_mapCurrentLayer === 'street') {
+    _flockMap.removeLayer(_streetLayer);
+    _satelliteLayer.addTo(_flockMap);
+    _mapCurrentLayer = 'satellite';
+  } else {
+    _flockMap.removeLayer(_satelliteLayer);
+    _streetLayer.addTo(_flockMap);
+    _mapCurrentLayer = 'street';
+  }
+  _updateLayerToggleBtn();
+}
+
+function _updateLayerToggleBtn() {
+  const btn = document.getElementById('map-layer-toggle');
+  if (!btn) return;
+  if (_mapCurrentLayer === 'street') {
+    btn.innerHTML = '<span class="material-icons-round" style="font-size:14px">satellite</span> Satelit';
+  } else {
+    btn.innerHTML = '<span class="material-icons-round" style="font-size:14px">map</span> Peta';
+  }
+}
+
 // ---- OWNER: Set lokasi dari klik peta ----
-function setFlockMapLocation(lat, lng) {
+function setFlockMapLocation(lat, lng, autoSave = false) {
   _flockMapLat = lat;
   _flockMapLng = lng;
 
   // Hapus marker lama
   if (_flockMarker) _flockMap.removeLayer(_flockMarker);
 
-  // Buat marker baru dengan icon custom
+  // Marker custom
   const icon = L.divIcon({
     className: '',
-    html: '<div style="background:#3B82F6;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>',
-    iconSize: [28, 28],
-    iconAnchor: [14, 28]
+    html: `<div style="
+      background:#3B82F6;
+      width:32px;height:32px;
+      border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      border:3px solid #fff;
+      box-shadow:0 3px 10px rgba(0,0,0,.4)
+    "></div>`,
+    iconSize:   [32, 32],
+    iconAnchor: [16, 32]
   });
-  _flockMarker = L.marker([lat, lng], { icon }).addTo(_flockMap);
-  _flockMap.setView([lat, lng], Math.max(_flockMap.getZoom(), 14));
+  _flockMarker = L.marker([lat, lng], { icon, draggable: true }).addTo(_flockMap);
+
+  // Drag marker → update koordinat
+  _flockMarker.on('dragend', function(e) {
+    const pos = e.target.getLatLng();
+    setFlockMapLocation(pos.lat, pos.lng, true);
+  });
+
+  _flockMap.setView([lat, lng], Math.max(_flockMap.getZoom(), 15));
 
   // Tampilkan koordinat
-  const coordsEl = document.getElementById('map-coords-display');
+  const coordsEl   = document.getElementById('map-coords-display');
   const coordsText = document.getElementById('map-coords-text');
+  const savedBadge = document.getElementById('map-saved-badge');
+
   coordsText.textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
   coordsEl.classList.remove('hidden');
+
+  // Auto-save badge
+  if (autoSave && savedBadge) {
+    savedBadge.classList.remove('hidden');
+    showToast('📍 Lokasi tersimpan');
+  }
 }
 
 // ---- OWNER: Hapus pin lokasi ----
@@ -1666,6 +1736,8 @@ function clearFlockLocation() {
   _flockMapLng = null;
   if (_flockMarker && _flockMap) { _flockMap.removeLayer(_flockMarker); _flockMarker = null; }
   document.getElementById('map-coords-display').classList.add('hidden');
+  const badge = document.getElementById('map-saved-badge');
+  if (badge) badge.classList.add('hidden');
 }
 
 // ---- OWNER: Gunakan GPS browser → pin di peta ----
@@ -1675,8 +1747,8 @@ function useMyLocationMap() {
   navigator.geolocation.getCurrentPosition(
     pos => {
       const { latitude, longitude } = pos.coords;
-      setFlockMapLocation(latitude, longitude);
-      showToast('Lokasi GPS berhasil diambil');
+      setFlockMapLocation(latitude, longitude, true); // auto-save
+      showToast('📍 Lokasi GPS tersimpan');
     },
     err => {
       const msg = {

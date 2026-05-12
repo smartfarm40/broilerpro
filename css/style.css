@@ -916,27 +916,55 @@ body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-t
 /* Peta Leaflet (Owner) */
 .flock-map-container {
   width: 100%;
-  height: 220px;
-  min-height: 220px;
+  height: 340px;
+  min-height: 340px;
   border-radius: 12px;
   border: 1.5px solid var(--outline);
   margin-top: 6px;
   background: var(--surface-variant);
-  /* z-index dan position penting agar tile Leaflet tampil di dalam modal */
   position: relative;
   z-index: 1;
+  overflow: hidden;
 }
 
 /* Pastikan Leaflet container mengisi penuh div-nya */
 .flock-map-container .leaflet-container {
   width: 100% !important;
-  height: 220px !important;
+  height: 340px !important;
+  border-radius: 10px;
+}
+
+/* Toggle satelit/map */
+.map-layer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.map-layer-btn:hover { background: #2563EB; }
+
+/* Badge tersimpan */
+.map-saved-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #059669;
+  background: rgba(16,185,129,.12);
+  padding: 2px 8px;
   border-radius: 10px;
 }
 
 /* Modal flock — scroll tapi jangan potong peta */
-.modal-card--flock .modal-body {
-  max-height: 72vh;
+.modal-content .modal-body {
+  max-height: 80vh;
   overflow-y: auto;
   overflow-x: hidden;
 }
