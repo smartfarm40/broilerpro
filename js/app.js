@@ -22,33 +22,46 @@ window.addEventListener('load', async () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
 
-  // ---- AUTH GUARD (async — Supabase session check) ----
-  const loggedIn = await AUTH.init();
+  // Tampilkan splash segera
+  applyTheme();
+
+  // ---- AUTH GUARD — timeout 5 detik agar tidak hang selamanya ----
+  const authTimeout = new Promise(resolve => setTimeout(() => resolve(false), 5000));
+  const loggedIn = await Promise.race([AUTH.init(), authTimeout]);
+
   if (!loggedIn) {
     window.location.href = 'auth/login.html';
     return;
   }
 
-  // Terapkan tema dari settings
+  // ---- Tampilkan app segera, load data di background ----
+  // Jangan tunggu data selesai — render dulu, data menyusul
+  _hideSplash();
+
+  // Load data di background (non-blocking)
+  Promise.all([loadDB(), loadTargets()])
+    .then(() => {
+      // Refresh dashboard setelah data masuk
+      if (currentPage === 'dashboard') renderDashboard();
+    })
+    .catch(e => console.warn('[APP] loadDB error:', e.message));
+});
+
+function _hideSplash() {
   applyTheme();
-
-  // ---- Muat data dari Supabase ----
-  try {
-    await Promise.all([loadDB(), loadTargets()]);
-  } catch (e) {
-    console.warn('[APP] loadDB error:', e.message);
-  }
-
-  setTimeout(() => {
-    document.getElementById('splash').style.opacity = '0';
+  const splash = document.getElementById('splash');
+  const app    = document.getElementById('app');
+  if (splash) {
+    splash.style.transition = 'opacity 0.3s';
+    splash.style.opacity = '0';
     setTimeout(() => {
-      document.getElementById('splash').classList.add('hidden');
-      document.getElementById('app').classList.remove('hidden');
+      splash.classList.add('hidden');
+      if (app) app.classList.remove('hidden');
       navigateTo('dashboard');
       applyRoleUI();
-    }, 500);
-  }, 1200);
-});
+    }, 300);
+  }
+}
 
 // ---- Update DB keys dengan prefix tenant ----
 function updateDBKeys() {

@@ -4,11 +4,11 @@
 body{font-family:'Fredoka',sans-serif;background:var(--bg);color:var(--primary-text);min-height:100vh;overflow-x:hidden}
 .hidden{display:none!important}
 /* Splash */
-.splash{position:fixed;inset:0;background:var(--primary);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s}
+.splash{position:fixed;inset:0;background:var(--primary);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .3s ease}
 .splash-content{text-align:center;color:#fff}
-.splash-icon .material-icons-round{font-size:72px;display:block;margin-bottom:16px}
-.splash h1{font-size:32px;font-weight:700;margin-bottom:8px}
-.splash p{font-size:16px;opacity:.85}
+.splash-icon .material-icons-round{font-size:56px;display:block;margin-bottom:12px}
+.splash h1{font-size:28px;font-weight:700;margin-bottom:6px}
+.splash p{font-size:14px;opacity:.85}
 /* App */
 .app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
 .main-content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:80px}

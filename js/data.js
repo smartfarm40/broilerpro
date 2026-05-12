@@ -65,19 +65,22 @@ async function loadDB() {
   if (!sb) { _loadFromCache(); return; }
 
   try {
-    await Promise.all([
-      _loadFlocks(sb),
-      _loadSettings()
-    ]);
+    // Load flocks dulu (paling penting untuk render dashboard)
+    await _loadFlocks(sb);
 
-    // Load daily logs untuk kandang aktif pertama
+    // Load settings dari cache
+    await _loadSettings();
+
+    // Load daily logs & inventory secara paralel di background
     const active = DB.flocks.find(f => f.active);
-    if (active) await _loadDailyLogs(sb, active.id);
-
-    await _loadInventory(sb);
-
-    // Simpan ke cache
-    _saveToCache();
+    if (active) {
+      // Non-blocking — tidak perlu await
+      Promise.all([
+        _loadDailyLogs(sb, active._dbId || active.id),
+        _loadInventory(sb)
+      ]).then(() => _saveToCache())
+        .catch(e => console.warn('[DB] background load error:', e.message));
+    }
 
   } catch (e) {
     console.warn('[DB] loadDB error, fallback ke cache:', e.message);

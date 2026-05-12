@@ -41,18 +41,23 @@ const AUTH = {
   },
 
   // ---- Init: cek session aktif dari Supabase ----
-  // Mengembalikan Promise<boolean>
   async init() {
     const client = this._getClient();
     if (!client) return false;
 
     try {
+      // Cek cache session lokal dulu (lebih cepat)
       const { data: { session }, error } = await client.auth.getSession();
       if (error || !session) return false;
 
       this._session = session;
-      await this._loadProfile(session.user.id);
-      await this._loadPermissions(session.user.id);
+
+      // Load profile & permissions secara paralel
+      await Promise.all([
+        this._loadProfile(session.user.id),
+        this._loadPermissions(session.user.id)
+      ]);
+
       return true;
     } catch (e) {
       console.warn('[AUTH] init error:', e.message);
