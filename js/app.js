@@ -1047,14 +1047,15 @@ async function loadFarmSettings() {
   const sb = AUTH.getSupabase();
   if (!sb) return;
   try {
+    // Ambil farm_settings — semua user bisa baca (single-tenant, satu row)
     const { data } = await sb
       .from('farm_settings')
       .select('*')
-      .single();
+      .limit(1)
+      .maybeSingle();
     if (data) {
       _farmSettingsCache = data;
       DB.settings.farmName = data.farm_name || DB.settings.farmName;
-      // Tampilkan foto farm jika ada
       _applyFarmPhoto(data.farm_photo);
     }
   } catch (e) {
@@ -1135,7 +1136,7 @@ function editFarmName() {
                 Pilih Foto
               </button>
               <input type="file" id="farm-photo-input" accept="image/*" style="display:none" onchange="onFarmPhotoSelected(this)" />
-              <div style="font-size:11px;color:var(--hint);margin-top:6px">JPG/PNG, maks 500KB. Akan ditampilkan di header aplikasi.</div>
+              <div style="font-size:11px;color:var(--hint);margin-top:6px">JPG/PNG, semua ukuran. Foto akan dikompres otomatis.</div>
             </div>
           </div>
         </div>
@@ -1162,29 +1163,87 @@ function editFarmName() {
   setTimeout(() => document.getElementById('input-farm-name')?.focus(), 100);
 }
 
-// Saat user pilih foto
-function onFarmPhotoSelected(input) {
+// Kompresi foto menggunakan Canvas API (tanpa library tambahan)
+// Target: maks 800x800px, JPEG quality 72%, hasil < 150KB
+function compressImage(file, maxWidth, maxHeight, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        // Hitung dimensi baru dengan mempertahankan aspect ratio
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth || h > maxHeight) {
+          const ratio = Math.min(maxWidth / w, maxHeight / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width  = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // Export sebagai JPEG dengan quality yang ditentukan
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressed);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Saat user pilih foto — kompresi otomatis sebelum preview
+async function onFarmPhotoSelected(input) {
   const file = input.files[0];
   if (!file) return;
 
-  if (file.size > 500 * 1024) {
-    const errEl = document.getElementById('farm-edit-error');
-    if (errEl) { errEl.textContent = 'Ukuran foto maksimal 500KB'; errEl.style.display = 'block'; }
+  const errEl   = document.getElementById('farm-edit-error');
+  const preview = document.getElementById('farm-photo-preview');
+  const icon    = document.getElementById('farm-photo-icon');
+
+  // Validasi tipe file
+  if (!file.type.startsWith('image/')) {
+    if (errEl) { errEl.textContent = 'File harus berupa gambar (JPG/PNG)'; errEl.style.display = 'block'; }
     input.value = '';
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const dataUrl = e.target.result;
-    const preview = document.getElementById('farm-photo-preview');
-    const icon    = document.getElementById('farm-photo-icon');
-    if (preview) { preview.src = dataUrl; preview.style.display = 'block'; }
+  // Tampilkan loading state
+  if (icon) { icon.textContent = 'hourglass_empty'; icon.style.display = 'block'; }
+  if (preview) preview.style.display = 'none';
+  if (errEl) errEl.style.display = 'none';
+
+  try {
+    // Kompresi: maks 800x800px, JPEG quality 72%
+    const compressed = await compressImage(file, 800, 800, 0.72);
+
+    // Hitung ukuran hasil kompresi (base64 → bytes ≈ length * 0.75)
+    const sizeKB = Math.round(compressed.length * 0.75 / 1024);
+
+    // Tampilkan preview
+    if (preview) { preview.src = compressed; preview.style.display = 'block'; }
     if (icon)    icon.style.display = 'none';
-    // Simpan sementara di input hidden
-    input.dataset.dataUrl = dataUrl;
-  };
-  reader.readAsDataURL(file);
+
+    // Simpan hasil kompresi
+    input.dataset.dataUrl = compressed;
+
+    // Info ukuran
+    if (errEl) {
+      errEl.style.color = 'var(--secondary-text)';
+      errEl.textContent = `Foto dikompres: ${sizeKB}KB (dari ${Math.round(file.size / 1024)}KB)`;
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    if (errEl) { errEl.textContent = 'Gagal memproses foto. Coba foto lain.'; errEl.style.display = 'block'; }
+    if (icon) { icon.textContent = 'add_photo_alternate'; icon.style.display = 'block'; }
+    input.value = '';
+  }
 }
 
 async function saveFarmName() {
