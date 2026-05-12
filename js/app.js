@@ -119,7 +119,7 @@ function applyRoleUI() {
     const teamSection = document.getElementById('section-team');
     if (teamSection) teamSection.style.display = AUTH.can('member.invite') ? '' : 'none';
   }
-  if (!AUTH.can('log.create')) {
+  if (!AUTH.can('log.create') && !['operator','owner','manager','staff'].includes(AUTH.role)) {
     document.querySelectorAll('[onclick*="completeDay"],[onclick*="saveProgress"]')
       .forEach(el => el.style.display = 'none');
   }
@@ -599,57 +599,78 @@ async function completeDay() {
 
 async function saveProgress() {
   // ---- Validasi input ----
-  const mortalityVal = parseInt(document.getElementById('input-mortality').value) || null;
-  const cullingVal   = parseInt(document.getElementById('input-culling').value)   || null;
-  const feedAmVal    = parseFloat(document.getElementById('input-feed-am').value) || null;
-  const feedPmVal    = parseFloat(document.getElementById('input-feed-pm').value) || null;
-  const waterVal     = parseInt(document.getElementById('input-water').value)     || null;
+  const mortalityVal = document.getElementById('input-mortality').value;
+  const cullingVal   = document.getElementById('input-culling').value;
+  const feedAmVal    = document.getElementById('input-feed-am').value;
+  const feedPmVal    = document.getElementById('input-feed-pm').value;
+  const waterVal     = document.getElementById('input-water').value;
+  const notesVal     = document.getElementById('input-notes').value;
+  const feedCodeVal  = document.getElementById('input-feed-code').value;
 
-  if ((mortalityVal !== null && mortalityVal < 0) ||
-      (cullingVal   !== null && cullingVal   < 0) ||
-      (feedAmVal    !== null && feedAmVal    < 0) ||
-      (feedPmVal    !== null && feedPmVal    < 0) ||
-      (waterVal     !== null && waterVal     < 0)) {
+  // Konversi — null jika kosong (tidak overwrite data existing)
+  const mortality = mortalityVal !== '' ? parseInt(mortalityVal)   : undefined;
+  const culling   = cullingVal   !== '' ? parseInt(cullingVal)     : undefined;
+  const feedAm    = feedAmVal    !== '' ? parseFloat(feedAmVal)    : undefined;
+  const feedPm    = feedPmVal    !== '' ? parseFloat(feedPmVal)    : undefined;
+  const water     = waterVal     !== '' ? parseInt(waterVal)       : undefined;
+
+  // Validasi nilai negatif
+  if ((mortality !== undefined && mortality < 0) ||
+      (culling   !== undefined && culling   < 0) ||
+      (feedAm    !== undefined && feedAm    < 0) ||
+      (feedPm    !== undefined && feedPm    < 0) ||
+      (water     !== undefined && water     < 0)) {
     showToast('⚠️ Nilai tidak boleh negatif');
     return;
   }
 
-  const activeFlock   = DB.flocks.find(f => f.active);
-  const maxPopulation = activeFlock ? (activeFlock.current_qty || activeFlock.qty || 99999) : 99999;
-  const prevDeplesi   = DB.dailyLogs.slice(0, -1).reduce((sum, l) => sum + (l.mortality || 0) + (l.culling || 0), 0);
-  const sisaPopulasi  = maxPopulation - prevDeplesi;
-  const totalDeplesi  = (mortalityVal || 0) + (cullingVal || 0);
-  if (totalDeplesi > sisaPopulasi) {
-    showToast('⚠️ Total deplesi melebihi sisa populasi (' + sisaPopulasi + ' ekor)');
-    return;
+  // Validasi deplesi
+  if (mortality !== undefined || culling !== undefined) {
+    const activeFlock  = DB.flocks.find(f => f.active);
+    const maxPop       = activeFlock ? (activeFlock.current_qty || activeFlock.qty || 99999) : 99999;
+    const prevDeplesi  = DB.dailyLogs.slice(0, -1).reduce((s, l) => s + (l.mortality||0) + (l.culling||0), 0);
+    const sisaPop      = maxPop - prevDeplesi;
+    const totalDeplesi = (mortality || 0) + (culling || 0);
+    if (totalDeplesi > sisaPop) {
+      showToast('⚠️ Total deplesi melebihi sisa populasi (' + sisaPop + ' ekor)');
+      return;
+    }
   }
 
   const log = getTodayLog();
   if (log) {
-    log.mortality = mortalityVal;
-    log.culling   = cullingVal;
-    log.feed_code = document.getElementById('input-feed-code').value;
-    log.feed_am   = feedAmVal;
-    log.feed_pm   = feedPmVal;
-    log.feed      = (feedAmVal || 0) + (feedPmVal || 0);
-    log.water     = waterVal;
-    log.notes     = document.getElementById('input-notes').value;
-    log.checklist = Object.assign({}, readChecklist());
+    // ── Partial merge: hanya update field yang diisi ──────────────────────
+    if (mortality !== undefined) log.mortality = mortality;
+    if (culling   !== undefined) log.culling   = culling;
+    if (feedAm    !== undefined) log.feed_am   = feedAm;
+    if (feedPm    !== undefined) log.feed_pm   = feedPm;
+    if (water     !== undefined) log.water     = water;
+    if (feedCodeVal)             log.feed_code = feedCodeVal;
+    if (notesVal.trim())         log.notes     = notesVal;
+
+    // Hitung total pakan dari nilai yang ada (existing + baru)
+    const am = log.feed_am || 0;
+    const pm = log.feed_pm || 0;
+    log.feed = am + pm;
+
+    // Checklist — merge dengan existing
+    const cl = readChecklist();
+    log.checklist = Object.assign({}, log.checklist || {}, cl);
   }
 
-  // Log aktivitas per kategori yang diisi
+  // Log aktivitas
   const _log = getTodayLog();
   if (_log) {
-    if (_log.mortality !== null || _log.culling !== null)
+    if (mortality !== undefined || culling !== undefined)
       logActivity('deplesi', 'Mati: ' + (_log.mortality||0) + ' | Afkir: ' + (_log.culling||0) + ' ekor');
-    if (_log.feed_am || _log.feed_pm)
+    if (feedAm !== undefined || feedPm !== undefined)
       logActivity('pakan', (_log.feed_code||'') + ' Pagi: ' + (_log.feed_am||0) + ' Sore: ' + (_log.feed_pm||0) + ' kg');
-    if (_log.water)
+    if (water !== undefined)
       logActivity('air', _log.water + ' liter');
-    if (_log.notes && _log.notes.trim())
-      logActivity('catatan', _log.notes.substring(0,40));
-    if (_log.checklist && _log.checklist.suhu)
-      logActivity('checklist', 'Suhu: ' + _log.checklist.suhu + '°C | PLN: ' + (_log.checklist.pln||'-') + ' | Genset: ' + (_log.checklist.genset||'-'));
+    if (notesVal.trim())
+      logActivity('catatan', notesVal.substring(0, 40));
+    if (_log.checklist?.suhu)
+      logActivity('checklist', 'Suhu: ' + _log.checklist.suhu + '°C');
   }
 
   // Simpan ke Supabase

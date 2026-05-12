@@ -262,33 +262,38 @@ async function saveLog(log) {
   const active = DB.flocks.find(f => f.active);
   if (!active) return { error: 'Tidak ada kandang aktif' };
 
+  // ── Partial payload — hanya kirim field yang punya nilai ─────────────────
+  // Ini mencegah overwrite data existing dengan null/0
   const payload = {
-    kandang_id:      log._kandangId || active._dbId || active.id,
-    hari:            log.day,
-    tanggal:         log.date,
-    mati:            log.mortality || 0,
-    culling:         log.culling   || 0,
-    penyebab_mati:   '',
-    pakan_total:     log.feed      || 0,
-    feed_code:       log.feed_code || '',
-    feed_am:         log.feed_am   || 0,
-    feed_pm:         log.feed_pm   || 0,
-    berat_rata_rata: log.weight    || 0,
-    timbang_rows:    log.timbang_rows || [],
-    checklist:       log.checklist    || {},
-    activities:      log.activities   || [],
-    catatan:         log.notes        || '',
-    is_complete:     log.is_complete  || false,
-    input_oleh:      AUTH.userId || ''
+    kandang_id:  log._kandangId || active._dbId || active.id,
+    hari:        log.day,
+    tanggal:     log.date,
+    input_oleh:  AUTH.userId || '',
+    is_complete: log.is_complete || false
   };
 
-  // Checklist ke kolom lama juga (kompatibilitas)
+  // Hanya tambahkan field jika ada nilainya
+  if (log.mortality !== null && log.mortality !== undefined) payload.mati    = log.mortality;
+  if (log.culling   !== null && log.culling   !== undefined) payload.culling = log.culling;
+  if (log.feed_code)  payload.feed_code = log.feed_code;
+  if (log.feed_am  !== null && log.feed_am  !== undefined)  payload.feed_am = log.feed_am;
+  if (log.feed_pm  !== null && log.feed_pm  !== undefined)  payload.feed_pm = log.feed_pm;
+  if (log.feed     !== null && log.feed     !== undefined)  payload.pakan_total = log.feed;
+  if (log.weight   !== null && log.weight   !== undefined)  payload.berat_rata_rata = log.weight;
+  if (log.timbang_rows?.length)  payload.timbang_rows = log.timbang_rows;
+  if (log.checklist)             payload.checklist    = log.checklist;
+  if (log.activities?.length)    payload.activities   = log.activities;
+  if (log.notes?.trim())         payload.catatan      = log.notes;
+
+  // Checklist ke kolom lama (kompatibilitas) — hanya jika ada nilai
   if (log.checklist) {
-    payload.suhu_pagi       = parseFloat(log.checklist.suhu) || null;
-    payload.blower_nyala    = parseInt(log.checklist.kipasQty) || 0;
-    payload.inverter_status = log.checklist.inverter || 'off';
-    payload.inverter_hz     = parseFloat(log.checklist.inverterHz) || null;
-    payload.listrik_status  = log.checklist.genset === 'on' ? 'genset' : 'pln';
+    const suhu = parseFloat(log.checklist.suhu);
+    if (!isNaN(suhu) && suhu > 0) payload.suhu_pagi = suhu;
+    if (log.checklist.kipasQty)   payload.blower_nyala    = parseInt(log.checklist.kipasQty) || 0;
+    if (log.checklist.inverter)   payload.inverter_status = log.checklist.inverter;
+    if (log.checklist.inverterHz) payload.inverter_hz     = parseFloat(log.checklist.inverterHz) || null;
+    if (log.checklist.pln || log.checklist.genset)
+      payload.listrik_status = log.checklist.genset === 'on' ? 'genset' : 'pln';
   }
 
   let result;
