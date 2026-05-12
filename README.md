@@ -4,7 +4,7 @@ Aplikasi manajemen peternakan ayam broiler berbasis Progressive Web App (PWA).
 
 ## 🚀 Live Demo
 ```
-https://broilertrack.vercel.app
+https://broilerpro.vercel.app
 ```
 
 ## 📋 Fitur
@@ -82,9 +82,7 @@ python -m http.server 8080
 Buka: `http://localhost:8080`
 
 ### 3. Register user pertama
-Buka `http://localhost:8080/auth/register.html` dan daftar dengan role **Owner**.
-
-> **Catatan:** Pastikan email confirmation dinonaktifkan di Supabase Dashboard sebelum register.
+Hubungi Administrator di **barotech26@gmail.com** untuk mendapatkan akun.
 
 ## 🗄️ Database
 
