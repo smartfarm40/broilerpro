@@ -98,20 +98,22 @@ const AuthService = {
   async getMembers() {
     const sb = this._sb();
     if (!sb) return [];
-    if (!AUTH.can('member.edit')) return [];
+    if (!AUTH.can('member.view')) return [];
 
     const { data, error } = await sb
       .from('profiles')
-      .select('id, nama, role, kandang_id, created_at');
+      .select('id, nama, email, role, kandang_id, created_at, tenant_id')
+      .eq('tenant_id', AUTH.tenantId)
+      .order('created_at', { ascending: true });
 
     if (error) { console.warn('[AUTH] getMembers error:', error.message); return []; }
     return (data || []).map(p => ({
       user_id:   p.id,
-      full_name: p.nama,
-      role:      p.role,
+      full_name: p.nama || '',
+      email:     p.email || '',
+      role:      p.role || 'viewer',
       kandang_id: p.kandang_id,
-      // email tidak tersedia dari profiles — hanya dari auth.users (server-side)
-      email:     ''
+      created_at: p.created_at
     }));
   },
 

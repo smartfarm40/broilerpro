@@ -1949,8 +1949,8 @@ async function deleteFlock(flockId, flockName) {
   
   try {
     // Hapus dari Supabase jika ada _dbId
-    if (flock._dbId) {
-      const { error } = await supabase
+    if (flock._dbId && window._sbClient) {
+      const { error } = await window._sbClient
         .from('kandangs')
         .delete()
         .eq('id', flock._dbId);
