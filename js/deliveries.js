@@ -24,22 +24,36 @@ const Deliveries = {
     const client = AUTH.getSupabase();
     if (!client) return [];
     try {
-      let q = client
-        .from('deliveries')
-        .select('*, kandang:kandangs(id, name), inputter:profiles!deliveries_input_by_fkey(id, nama)')
-        .order('tanggal_kirim', { ascending: false });
+      const buildQuery = (q) => {
+        if (filters.kandang_id)    q = q.eq('kandang_id', filters.kandang_id);
+        if (filters.delivery_type) q = q.eq('delivery_type', filters.delivery_type);
+        if (filters.status)        q = q.eq('status', filters.status);
+        if (filters.start_date)    q = q.gte('tanggal_kirim', filters.start_date);
+        if (filters.end_date)      q = q.lte('tanggal_kirim', filters.end_date);
+        return q;
+      };
 
-      if (filters.kandang_id)    q = q.eq('kandang_id', filters.kandang_id);
-      if (filters.delivery_type) q = q.eq('delivery_type', filters.delivery_type);
-      if (filters.status)        q = q.eq('status', filters.status);
-      if (filters.start_date)    q = q.gte('tanggal_kirim', filters.start_date);
-      if (filters.end_date)      q = q.lte('tanggal_kirim', filters.end_date);
+      // Query dengan join
+      let q = buildQuery(
+        client.from('deliveries')
+          .select(`*, kandang:kandangs!deliveries_kandang_id_fkey(id, name), inputter:profiles!deliveries_input_by_fkey(id, nama)`)
+          .order('tanggal_kirim', { ascending: false })
+      );
 
       const { data, error } = await q;
-      if (error) throw error;
+
+      if (error) {
+        console.warn('[Deliveries] join query error, fallback:', error.message);
+        // Fallback tanpa join
+        const { data: plain, error: e2 } = await buildQuery(
+          client.from('deliveries').select('*').order('tanggal_kirim', { ascending: false })
+        );
+        if (e2) throw e2;
+        return plain || [];
+      }
       return data || [];
     } catch (e) {
-      console.error('[Deliveries] getAll error:', e.message);
+      console.error('[Deliveries] getAll exception:', e.message);
       return [];
     }
   },
