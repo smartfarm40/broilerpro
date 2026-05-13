@@ -986,6 +986,72 @@ function renderInventory() {
   document.getElementById('inv-feed-count').textContent = getFeedBagCount();
   document.getElementById('inv-critical-count').textContent = getCriticalCount();
   renderInvList();
+  _loadInvItemSelect(); // populate dropdown dari data pengiriman
+}
+
+// Isi dropdown "Perbarui Level Stok" dari item pengiriman yang pernah masuk
+async function _loadInvItemSelect() {
+  const sel = document.getElementById('inv-item-select');
+  if (!sel) return;
+
+  const prevVal = sel.value; // simpan pilihan sebelumnya
+
+  try {
+    const client = AUTH.getSupabase();
+    if (!client) throw new Error('no client');
+
+    // Ambil semua item_name unik dari deliveries
+    const { data, error } = await client
+      .from('deliveries')
+      .select('item_name, delivery_type')
+      .order('item_name', { ascending: true });
+
+    let items = [];
+
+    if (!error && data && data.length > 0) {
+      // Kelompokkan per tipe
+      const pakan  = [...new Set(data.filter(d => d.delivery_type === 'pakan').map(d => d.item_name).filter(Boolean))];
+      const obat   = [...new Set(data.filter(d => d.delivery_type === 'obat').map(d => d.item_name).filter(Boolean))];
+      const lain   = [...new Set(data.filter(d => !['pakan','obat'].includes(d.delivery_type)).map(d => d.item_name).filter(Boolean))];
+
+      if (pakan.length)  items.push({ group: 'Pakan', names: pakan });
+      if (obat.length)   items.push({ group: 'Obat & Vitamin', names: obat });
+      if (lain.length)   items.push({ group: 'Lainnya', names: lain });
+    }
+
+    // Fallback ke item dari DB.inventory jika tidak ada data pengiriman
+    if (items.length === 0) {
+      const invNames = [...new Set(DB.inventory.map(i => i.name).filter(Boolean))];
+      if (invNames.length) items.push({ group: 'Stok', names: invNames });
+    }
+
+    // Rebuild options
+    sel.innerHTML = '<option value="">Pilih item...</option>';
+    items.forEach(group => {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = group.group;
+      group.names.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        if (name === prevVal) opt.selected = true;
+        optgroup.appendChild(opt);
+      });
+      sel.appendChild(optgroup);
+    });
+
+    // Jika tidak ada item sama sekali, tampilkan placeholder info
+    if (items.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Belum ada data pengiriman';
+      opt.disabled = true;
+      sel.appendChild(opt);
+    }
+
+  } catch (e) {
+    console.warn('[Inventory] _loadInvItemSelect:', e.message);
+  }
 }
 
 function renderInvList() {
@@ -1014,24 +1080,47 @@ function switchInvTab(tab, btn) {
 async function updateStock() {
   const sel = document.getElementById('inv-item-select').value;
   const qty = parseInt(document.getElementById('inv-qty-input').value) || 0;
-  if (!sel)    { showToast('⚠️ Pilih item terlebih dahulu'); return; }
+  if (!sel)     { showToast('⚠️ Pilih item terlebih dahulu'); return; }
   if (qty <= 0) { showToast('⚠️ Jumlah harus lebih dari 0'); return; }
   if (qty > 10000) { showToast('⚠️ Jumlah terlalu besar (maks 10.000)'); return; }
-  const item = DB.inventory.find(i => i.id.toString() === sel || i.name.toLowerCase().includes(sel));
+
+  // Cari item di inventory berdasarkan nama (case-insensitive)
+  const item = DB.inventory.find(i =>
+    i.name?.toLowerCase() === sel.toLowerCase() ||
+    i.id?.toString() === sel
+  );
+
   if (item) {
     item.qty += qty;
     if (item.qty > 0) item.status = item.qty < 5 ? 'reorder' : 'ok';
 
-    // Simpan ke Supabase jika item punya kandang_id
     if (item._kandangId) {
       await saveStockPakan(item._kandangId, item.qty);
     } else {
-      saveDB(); // fallback cache
+      saveDB();
     }
 
     renderInventory();
     document.getElementById('inv-qty-input').value = '';
-    showToast(item.name + ' diperbarui: ' + item.qty + ' ' + item.unit);
+    showToast('✓ ' + item.name + ' diperbarui: ' + item.qty + ' ' + item.unit);
+  } else {
+    // Item belum ada di inventory — buat baru
+    const newItem = {
+      id:        Date.now(),
+      name:      sel,
+      qty:       qty,
+      unit:      'kg',
+      status:    qty < 5 ? 'reorder' : 'ok',
+      icon:      'inventory_2',
+      iconColor: '#3B82F6',
+      bgTint:    'rgba(59,130,246,.1)',
+      category:  'feed'
+    };
+    DB.inventory.push(newItem);
+    saveDB();
+    renderInventory();
+    document.getElementById('inv-qty-input').value = '';
+    showToast('✓ ' + sel + ' ditambahkan: ' + qty + ' kg');
   }
 }
 
