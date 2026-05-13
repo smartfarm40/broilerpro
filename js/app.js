@@ -1001,6 +1001,77 @@ async function reloadInventoryFromDB() {
   }
 }
 
+// Tampilkan riwayat mutasi stok (kartu stok)
+async function showStockHistory() {
+  const sb = AUTH.getSupabase();
+  if (!sb) return;
+
+  // Buat modal
+  document.getElementById('modal-stock-history')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'modal-stock-history';
+  modal.className = 'modal';
+  modal.style.cssText = 'display:flex';
+  modal.innerHTML = `
+    <div class="modal-content modal-content-lg">
+      <div class="modal-header">
+        <h3 class="modal-title">Riwayat Mutasi Stok</h3>
+        <button class="modal-close" onclick="document.getElementById('modal-stock-history').remove()">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body" id="stock-history-body">
+        <div style="text-align:center;padding:24px;color:var(--hint)">
+          <span class="material-icons-round spin">refresh</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-stock-history').remove()">Tutup</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  try {
+    const { data, error } = await sb
+      .from('stock_movements')
+      .select('*')
+      .order('tanggal', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    const body = document.getElementById('stock-history-body');
+    if (!body) return;
+
+    if (error || !data?.length) {
+      body.innerHTML = '<div style="text-align:center;padding:24px;color:var(--secondary-text)">Belum ada riwayat mutasi stok</div>';
+      return;
+    }
+
+    body.innerHTML = data.map(m => {
+      const isMasuk = m.movement_type === 'masuk';
+      const color   = isMasuk ? '#10B981' : '#EF4444';
+      const icon    = isMasuk ? 'add_circle' : 'remove_circle';
+      const sign    = isMasuk ? '+' : '-';
+      const tgl     = m.tanggal ? new Date(m.tanggal).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }) : '-';
+      return `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--outline-variant)">
+          <span class="material-icons-round" style="color:${color};font-size:20px;flex-shrink:0">${icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600">${m.item_name}</div>
+            <div style="font-size:11px;color:var(--secondary-text)">${tgl} · ${m.keterangan || (isMasuk ? 'Barang masuk' : 'Barang keluar')}</div>
+            <div style="font-size:11px;color:var(--hint)">Stok: ${m.stok_sebelum} → ${m.stok_sesudah} ${m.satuan}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:14px;font-weight:700;color:${color}">${sign}${m.jumlah} ${m.satuan}</div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    const body = document.getElementById('stock-history-body');
+    if (body) body.innerHTML = '<div style="color:var(--error);padding:16px">Gagal memuat riwayat: ' + e.message + '</div>';
+  }
+}
+
 // Isi dropdown "Perbarui Level Stok" dari item pengiriman yang pernah masuk
 async function _loadInvItemSelect() {
   const sel = document.getElementById('inv-item-select');
@@ -1073,25 +1144,28 @@ function renderInvList() {
 
   if (!items.length) {
     list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--secondary-text);font-size:13px">' +
-      (currentInvTab === 'feed' ? 'Belum ada pengiriman pakan. Input di menu Kirim.' :
-       currentInvTab === 'medication' ? 'Belum ada pengiriman obat/vitamin.' :
+      (currentInvTab === 'feed' ? 'Belum ada stok pakan. Konfirmasi pengiriman untuk menambah stok.' :
+       currentInvTab === 'medication' ? 'Belum ada stok obat/vitamin.' :
        'Belum ada data stok.') + '</div>';
     return;
   }
 
   list.innerHTML = items.map(item => {
-    const statusLabel = { ok: 'Tersedia', reorder: 'Perlu Reorder', empty: 'Belum Diterima' }[item.status] || item.status;
+    const statusLabel = { ok: 'Tersedia', reorder: 'Perlu Reorder', empty: 'Habis' }[item.status] || item.status;
     const statusCls   = { ok: 'success', reorder: 'warning', empty: 'error' }[item.status] || '';
-    const pendingHtml = item.qtyPending > 0
-      ? `<div style="font-size:10px;color:var(--warning);margin-top:2px">+${item.qtyPending} ${item.unit} pending</div>`
-      : '';
     return '<div class="inv-item">' +
       '<div class="inv-item-icon" style="background:' + item.bgTint + '">' +
       '<span class="material-icons-round" style="color:' + item.iconColor + '">' + item.icon + '</span></div>' +
-      '<div class="inv-item-info"><div class="inv-item-name">' + item.name + '</div>' +
-      '<span class="inv-status-badge ' + statusCls + '">' + statusLabel + '</span>' +
-      pendingHtml + '</div>' +
-      '<div class="inv-item-right"><div class="inv-item-qty">' + item.qty + '</div><div class="inv-item-unit">' + item.unit + '</div></div></div>';
+      '<div class="inv-item-info">' +
+        '<div class="inv-item-name">' + item.name + '</div>' +
+        '<span class="inv-status-badge ' + statusCls + '">' + statusLabel + '</span>' +
+        (item.stok_minimum > 0 ? '<div style="font-size:10px;color:var(--hint);margin-top:2px">Min: ' + item.stok_minimum + ' ' + item.unit + '</div>' : '') +
+      '</div>' +
+      '<div class="inv-item-right">' +
+        '<div class="inv-item-qty">' + item.qty + '</div>' +
+        '<div class="inv-item-unit">' + item.unit + '</div>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 

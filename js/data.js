@@ -190,63 +190,37 @@ function _ensureTodayLog(kandangId) {
 }
 
 async function _loadInventory(sb) {
-  // Hitung stok dari deliveries yang sudah diterima (status = 'received')
-  // Kelompokkan per item_name + delivery_type
+  // Baca dari inventory_items (data induk stok gudang)
   const { data, error } = await sb
-    .from('deliveries')
-    .select('item_name, delivery_type, jumlah, satuan, status')
-    .in('status', ['received', 'pending', 'delivered']); // tampilkan semua, bukan hanya received
+    .from('inventory_items')
+    .select('*')
+    .order('item_type', { ascending: true })
+    .order('item_name', { ascending: true });
 
-  if (error) { console.warn('[DB] loadInventory error:', error.message); }
-
-  const rows = data || [];
-
-  if (rows.length === 0) {
-    // Tidak ada data pengiriman — inventory kosong
+  if (error) {
+    console.warn('[DB] loadInventory error:', error.message);
     DB.inventory = [];
     return;
   }
 
-  // Kelompokkan per item_name, hitung total jumlah yang diterima
-  const stockMap = {};
-  rows.forEach(row => {
-    const key = row.item_name;
-    if (!stockMap[key]) {
-      stockMap[key] = {
-        name:     row.item_name,
-        category: _deliveryTypeToCategory(row.delivery_type),
-        unit:     row.satuan || 'kg',
-        received: 0,  // sudah diterima
-        pending:  0,  // masih dalam perjalanan
-        icon:     _deliveryTypeIcon(row.delivery_type),
-        iconColor: _deliveryTypeColor(row.delivery_type),
-        bgTint:   _deliveryTypeBg(row.delivery_type)
-      };
-    }
-    const qty = parseFloat(row.jumlah) || 0;
-    if (row.status === 'received') {
-      stockMap[key].received += qty;
-    } else {
-      stockMap[key].pending += qty;
-    }
-  });
+  if (!data || data.length === 0) {
+    DB.inventory = [];
+    return;
+  }
 
-  // Konversi ke format DB.inventory
-  DB.inventory = Object.values(stockMap).map((item, i) => {
-    const qty = item.received; // stok = yang sudah diterima
-    return {
-      id:        'inv-delivery-' + i,
-      name:      item.name,
-      category:  item.category,
-      qty:       Math.round(qty * 10) / 10,
-      qtyPending: Math.round(item.pending * 10) / 10,
-      unit:      item.unit,
-      status:    qty === 0 ? 'empty' : (qty < 100 ? 'reorder' : 'ok'),
-      icon:      item.icon,
-      iconColor: item.iconColor,
-      bgTint:    item.bgTint
-    };
-  });
+  DB.inventory = data.map(row => ({
+    id:          row.id,
+    name:        row.item_name,
+    category:    _deliveryTypeToCategory(row.item_type),
+    qty:         parseFloat(row.stok_gudang) || 0,
+    unit:        row.satuan || 'kg',
+    status:      (parseFloat(row.stok_gudang) || 0) === 0 ? 'empty'
+                 : (parseFloat(row.stok_gudang) <= parseFloat(row.stok_minimum || 0) ? 'reorder' : 'ok'),
+    icon:        _deliveryTypeIcon(row.item_type),
+    iconColor:   _deliveryTypeColor(row.item_type),
+    bgTint:      _deliveryTypeBg(row.item_type),
+    stok_minimum: parseFloat(row.stok_minimum) || 0
+  }));
 }
 
 function _deliveryTypeToCategory(type) {
