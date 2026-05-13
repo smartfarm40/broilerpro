@@ -140,14 +140,11 @@ const AuthService = {
     if (!AUTH.can('member.remove')) return { error: 'Tidak punya izin' };
     if (userId === AUTH.userId) return { error: 'Tidak bisa hapus diri sendiri' };
 
-    // Hard delete - Hapus dari profiles
-    // Foreign keys sudah di-set ON DELETE SET NULL, jadi aman
-    const { error } = await sb
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
+    // Pakai RPC remove_member yang hapus dari profiles + auth.users sekaligus
+    const { data, error } = await sb.rpc('remove_member', { p_user_id: userId });
 
     if (error) return { error: error.message };
+    if (data?.error) return { error: data.error };
     return { success: true };
   },
 

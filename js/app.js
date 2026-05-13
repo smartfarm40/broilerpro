@@ -192,24 +192,21 @@ function _ensureLogoutButton() {
     </div>
     <div id="btn-logout-main"></div>`;
   settingsBody.appendChild(logoutSection);
+  _ensureVersionInfo(settingsBody);
+}
 
-  // Versi aplikasi — teks kecil di paling bawah, tidak mengganggu UI
-  if (!document.getElementById('app-version-info')) {
-    const versionEl = document.createElement('div');
-    versionEl.id = 'app-version-info';
-    versionEl.style.cssText = [
-      'text-align:center',
-      'padding:12px 0 24px',
-      'font-size:11px',
-      'color:var(--hint)',
-      'letter-spacing:0.3px',
-      'user-select:none'
-    ].join(';');
-    versionEl.innerHTML =
-      '<span class="material-icons-round" style="font-size:11px;vertical-align:middle;margin-right:3px;opacity:.6">verified</span>' +
-      'BroilerPro v' + (window.UpdateManager?.currentVersion || '2.1');
-    settingsBody.appendChild(versionEl);
-  }
+// Versi aplikasi — dipanggil terpisah agar tidak terblokir guard btn-logout-main
+function _ensureVersionInfo(settingsBody) {
+  if (document.getElementById('app-version-info')) return;
+  const el = settingsBody || document.querySelector('.settings-body');
+  if (!el) return;
+  const versionEl = document.createElement('div');
+  versionEl.id = 'app-version-info';
+  versionEl.style.cssText = 'text-align:center;padding:12px 0 24px;font-size:11px;color:var(--hint);letter-spacing:0.3px;user-select:none';
+  versionEl.innerHTML =
+    '<span class="material-icons-round" style="font-size:11px;vertical-align:middle;margin-right:3px;opacity:.6">verified</span>' +
+    'BroilerPro v' + (window.UpdateManager?.currentVersion || '2.1');
+  el.appendChild(versionEl);
 }
 
 async function doLogout() {
@@ -1420,6 +1417,9 @@ function renderSettings() {
       }
     }
   }
+
+  // Tampilkan versi di semua role (dipanggil setelah DOM settings siap)
+  setTimeout(() => _ensureVersionInfo(), 50);
 }
 
 async function renderTeamMembers() {
