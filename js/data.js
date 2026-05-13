@@ -190,35 +190,81 @@ function _ensureTodayLog(kandangId) {
 }
 
 async function _loadInventory(sb) {
+  // Hitung stok dari deliveries yang sudah diterima (status = 'received')
+  // Kelompokkan per item_name + delivery_type
   const { data, error } = await sb
-    .from('stock_pakan')
-    .select('id, kandang_id, jumlah_kg, updated_at');
+    .from('deliveries')
+    .select('item_name, delivery_type, jumlah, satuan, status')
+    .in('status', ['received', 'pending', 'delivered']); // tampilkan semua, bukan hanya received
 
-  if (error) { console.warn('[DB] loadInventory error:', error.message); return; }
+  if (error) { console.warn('[DB] loadInventory error:', error.message); }
 
-  // Konversi stock_pakan ke format inventory yang dipakai UI
-  DB.inventory = (data || []).map((row, i) => ({
-    id:        row.id,
-    name:      'Pakan Kandang ' + (i + 1),
-    category:  'feed',
-    qty:       Math.round(row.jumlah_kg || 0),
-    unit:      'kg',
-    status:    (row.jumlah_kg || 0) === 0 ? 'empty' : (row.jumlah_kg < 100 ? 'reorder' : 'ok'),
-    icon:      'bakery_dining',
-    iconColor: '#FBBF24',
-    bgTint:    'rgba(251,191,36,.12)',
-    _kandangId: row.kandang_id
-  }));
+  const rows = data || [];
 
-  // Tambah item default jika kosong
-  if (DB.inventory.length === 0) {
-    DB.inventory = [
-      { id:'inv-1', name:'Pakan Starter', category:'feed', qty:0, unit:'kg', status:'empty', icon:'bakery_dining', iconColor:'#FBBF24', bgTint:'rgba(251,191,36,.12)' },
-      { id:'inv-2', name:'Pakan Finisher', category:'feed', qty:0, unit:'kg', status:'empty', icon:'grain', iconColor:'#3B82F6', bgTint:'rgba(59,130,246,.1)' },
-      { id:'inv-3', name:'Vitamin', category:'medication', qty:0, unit:'Botol', status:'empty', icon:'vaccine', iconColor:'#EF4444', bgTint:'rgba(239,68,68,.1)' },
-      { id:'inv-4', name:'Sekam', category:'supplies', qty:0, unit:'Karung', status:'empty', icon:'grass', iconColor:'#10B981', bgTint:'rgba(16,185,129,.1)' }
-    ];
+  if (rows.length === 0) {
+    // Tidak ada data pengiriman — inventory kosong
+    DB.inventory = [];
+    return;
   }
+
+  // Kelompokkan per item_name, hitung total jumlah yang diterima
+  const stockMap = {};
+  rows.forEach(row => {
+    const key = row.item_name;
+    if (!stockMap[key]) {
+      stockMap[key] = {
+        name:     row.item_name,
+        category: _deliveryTypeToCategory(row.delivery_type),
+        unit:     row.satuan || 'kg',
+        received: 0,  // sudah diterima
+        pending:  0,  // masih dalam perjalanan
+        icon:     _deliveryTypeIcon(row.delivery_type),
+        iconColor: _deliveryTypeColor(row.delivery_type),
+        bgTint:   _deliveryTypeBg(row.delivery_type)
+      };
+    }
+    const qty = parseFloat(row.jumlah) || 0;
+    if (row.status === 'received') {
+      stockMap[key].received += qty;
+    } else {
+      stockMap[key].pending += qty;
+    }
+  });
+
+  // Konversi ke format DB.inventory
+  DB.inventory = Object.values(stockMap).map((item, i) => {
+    const qty = item.received; // stok = yang sudah diterima
+    return {
+      id:        'inv-delivery-' + i,
+      name:      item.name,
+      category:  item.category,
+      qty:       Math.round(qty * 10) / 10,
+      qtyPending: Math.round(item.pending * 10) / 10,
+      unit:      item.unit,
+      status:    qty === 0 ? 'empty' : (qty < 100 ? 'reorder' : 'ok'),
+      icon:      item.icon,
+      iconColor: item.iconColor,
+      bgTint:    item.bgTint
+    };
+  });
+}
+
+function _deliveryTypeToCategory(type) {
+  if (type === 'pakan') return 'feed';
+  if (type === 'obat' || type === 'vitamin' || type === 'vaksin') return 'medication';
+  return 'supplies';
+}
+function _deliveryTypeIcon(type) {
+  const icons = { pakan:'bakery_dining', obat:'medication', vitamin:'nutrition', vaksin:'vaccines', supplies:'inventory_2', lainnya:'category' };
+  return icons[type] || 'inventory_2';
+}
+function _deliveryTypeColor(type) {
+  const colors = { pakan:'#FBBF24', obat:'#EF4444', vitamin:'#10B981', vaksin:'#8B5CF6', supplies:'#3B82F6', lainnya:'#6B7280' };
+  return colors[type] || '#6B7280';
+}
+function _deliveryTypeBg(type) {
+  const bgs = { pakan:'rgba(251,191,36,.12)', obat:'rgba(239,68,68,.12)', vitamin:'rgba(16,185,129,.12)', vaksin:'rgba(139,92,246,.12)', supplies:'rgba(59,130,246,.12)', lainnya:'rgba(107,114,128,.12)' };
+  return bgs[type] || 'rgba(107,114,128,.12)';
 }
 
 async function _loadSettings() {

@@ -455,7 +455,7 @@ function navigateTo(page) {
   if (page === 'daily') renderDaily();
   if (page === 'flock') renderFlock();
   if (page === 'growth') { setTimeout(initGrowthCharts, 100); }
-  if (page === 'inventory') renderInventory();
+  if (page === 'inventory') { renderInventory(); reloadInventoryFromDB(); }
   if (page === 'panen') { loadPanen().then(() => renderPanen()); }
   if (page === 'settings') renderSettings();
   document.getElementById('main-content').scrollTop = 0;
@@ -986,7 +986,19 @@ function renderInventory() {
   document.getElementById('inv-feed-count').textContent = getFeedBagCount();
   document.getElementById('inv-critical-count').textContent = getCriticalCount();
   renderInvList();
-  _loadInvItemSelect(); // populate dropdown dari data pengiriman
+  _loadInvItemSelect();
+}
+
+// Reload inventori dari deliveries saat halaman dibuka
+async function reloadInventoryFromDB() {
+  try {
+    const sb = AUTH.getSupabase();
+    if (!sb) return;
+    await _loadInventory(sb);
+    renderInventory();
+  } catch (e) {
+    console.warn('[Inventory] reloadFromDB:', e.message);
+  }
 }
 
 // Isi dropdown "Perbarui Level Stok" dari item pengiriman yang pernah masuk
@@ -1058,16 +1070,29 @@ function renderInvList() {
   const list = document.getElementById('inv-list');
   if (!list) return;
   const items = getInventoryByCategory(currentInvTab);
+
+  if (!items.length) {
+    list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--secondary-text);font-size:13px">' +
+      (currentInvTab === 'feed' ? 'Belum ada pengiriman pakan. Input di menu Kirim.' :
+       currentInvTab === 'medication' ? 'Belum ada pengiriman obat/vitamin.' :
+       'Belum ada data stok.') + '</div>';
+    return;
+  }
+
   list.innerHTML = items.map(item => {
-    const statusLabel = { ok: 'Tersedia', reorder: 'Perlu Reorder', empty: 'Habis' }[item.status] || item.status;
-    const statusCls = { ok: 'success', reorder: 'warning', empty: 'error' }[item.status] || '';
+    const statusLabel = { ok: 'Tersedia', reorder: 'Perlu Reorder', empty: 'Belum Diterima' }[item.status] || item.status;
+    const statusCls   = { ok: 'success', reorder: 'warning', empty: 'error' }[item.status] || '';
+    const pendingHtml = item.qtyPending > 0
+      ? `<div style="font-size:10px;color:var(--warning);margin-top:2px">+${item.qtyPending} ${item.unit} pending</div>`
+      : '';
     return '<div class="inv-item">' +
       '<div class="inv-item-icon" style="background:' + item.bgTint + '">' +
       '<span class="material-icons-round" style="color:' + item.iconColor + '">' + item.icon + '</span></div>' +
       '<div class="inv-item-info"><div class="inv-item-name">' + item.name + '</div>' +
-      '<span class="inv-status-badge ' + statusCls + '">' + statusLabel + '</span></div>' +
+      '<span class="inv-status-badge ' + statusCls + '">' + statusLabel + '</span>' +
+      pendingHtml + '</div>' +
       '<div class="inv-item-right"><div class="inv-item-qty">' + item.qty + '</div><div class="inv-item-unit">' + item.unit + '</div></div></div>';
-  }).join('') || '<div style="text-align:center;padding:24px;color:var(--secondary-text)">Tidak ada item</div>';
+  }).join('');
 }
 
 function switchInvTab(tab, btn) {
@@ -4008,9 +4033,11 @@ async function confirmDeliveryReceived() {
   if (!_currentDeliveryDetail) return;
   const r = await Deliveries.confirmReceived(_currentDeliveryDetail.id);
   if (r.success) {
-    showToast('✅ Pengiriman dikonfirmasi diterima');
+    showToast('✅ Pengiriman dikonfirmasi diterima — stok diperbarui');
     closeModal('modal-delivery-detail');
     await renderDelivery();
+    // Reload inventori dari DB agar stok langsung terupdate
+    reloadInventoryFromDB();
   } else {
     showToast('⚠️ ' + r.error);
   }
