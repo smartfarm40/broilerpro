@@ -1530,34 +1530,71 @@ function toggleInviteForm() {
 }
 
 async function removeMember(userId) {
-  // Cari info anggota yang akan dihapus
-  const members = await AuthService.getMembers();
-  const member = members.find(m => m.user_id === userId);
-  const memberName = member ? (member.full_name || member.email) : 'anggota ini';
-  
-  // Konfirmasi dengan peringatan
-  const confirmed = confirm(
-    '⚠️ HAPUS ANGGOTA\n\n' +
-    'Anda akan menghapus: ' + memberName + '\n\n' +
-    'Anggota ini akan:\n' +
-    '• Dikeluarkan dari organisasi\n' +
-    '• Kehilangan akses ke semua data\n' +
-    '• Tidak bisa login ke aplikasi ini\n\n' +
-    'Lanjutkan?'
+  // Cari info anggota dari list yang sudah ada di DOM (tidak perlu fetch ulang)
+  const memberEl = document.querySelector(`[onclick="removeMember('${userId}')"]`);
+  const memberItem = memberEl?.closest('.team-member-item');
+  const memberName = memberItem?.querySelector('.team-member-name')?.textContent?.replace('(Anda)', '').trim()
+    || 'anggota ini';
+
+  // Modal konfirmasi custom (tidak pakai confirm() browser)
+  const confirmed = await _confirmDialog(
+    'Hapus ' + memberName + '?',
+    memberName + ' akan kehilangan akses dan tidak bisa login lagi.'
   );
-  
   if (!confirmed) return;
-  
-  showToast('⏳ Menghapus anggota...');
+
+  // Disable tombol hapus agar tidak double-click
+  if (memberEl) { memberEl.disabled = true; memberEl.style.opacity = '0.4'; }
+
+  showToast('⏳ Menghapus...');
   const result = await AuthService.removeMember({ userId });
-  
-  if (result.error) { 
-    showToast('❌ Gagal: ' + result.error); 
-    return; 
+
+  if (result.error) {
+    if (memberEl) { memberEl.disabled = false; memberEl.style.opacity = ''; }
+    showToast('❌ Gagal: ' + result.error);
+    return;
   }
-  
-  renderTeamMembers();
-  showToast('✓ ' + memberName + ' berhasil dihapus dari organisasi');
+
+  // Hapus item dari DOM langsung (tanpa reload halaman)
+  if (memberItem) {
+    memberItem.style.transition = 'opacity 0.2s, transform 0.2s';
+    memberItem.style.opacity = '0';
+    memberItem.style.transform = 'translateX(20px)';
+    setTimeout(() => memberItem.remove(), 200);
+  }
+
+  showToast('✓ ' + memberName + ' berhasil dihapus');
+
+  // Refresh list dari DB di background untuk pastikan sinkron
+  setTimeout(() => renderTeamMembers(), 500);
+}
+
+// Dialog konfirmasi custom — tidak pakai confirm() browser
+function _confirmDialog(title, message) {
+  return new Promise(resolve => {
+    // Hapus dialog lama jika ada
+    document.getElementById('_confirm-dialog')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = '_confirm-dialog';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="font-size:16px;font-weight:700;color:var(--on-surface);margin-bottom:8px">${title}</div>
+        <div style="font-size:14px;color:var(--secondary-text);margin-bottom:20px;line-height:1.5">${message}</div>
+        <div style="display:flex;gap:10px">
+          <button id="_confirm-cancel" style="flex:1;padding:10px;border:1px solid var(--outline-variant);border-radius:10px;background:none;font-size:14px;cursor:pointer;color:var(--on-surface)">Batalkan</button>
+          <button id="_confirm-ok" style="flex:1;padding:10px;border:none;border-radius:10px;background:#EF4444;color:#fff;font-size:14px;font-weight:600;cursor:pointer">Hapus</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    const cleanup = (val) => { overlay.remove(); resolve(val); };
+    document.getElementById('_confirm-cancel').onclick = () => cleanup(false);
+    document.getElementById('_confirm-ok').onclick     = () => cleanup(true);
+    overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+  });
 }
 
 async function doInvite() {
