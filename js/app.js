@@ -1077,63 +1077,74 @@ async function _loadInvItemSelect() {
   const sel = document.getElementById('inv-item-select');
   if (!sel) return;
 
-  const prevVal = sel.value; // simpan pilihan sebelumnya
+  const prevVal = sel.value;
+
+  // Map tab ke delivery_type yang relevan
+  const tabTypeMap = {
+    feed:       ['pakan'],
+    medication: ['obat', 'vitamin', 'vaksin'],
+    supplies:   ['supplies', 'lainnya']
+  };
+  const activeTypes = tabTypeMap[currentInvTab] || [];
+
+  // Label tab untuk placeholder
+  const tabLabel = {
+    feed:       'pakan',
+    medication: 'obat/vitamin',
+    supplies:   'perlengkapan'
+  }[currentInvTab] || 'item';
 
   try {
     const client = AUTH.getSupabase();
     if (!client) throw new Error('no client');
 
-    // Ambil semua item_name unik dari deliveries
+    // Query hanya tipe yang sesuai tab aktif
     const { data, error } = await client
-      .from('deliveries')
-      .select('item_name, delivery_type')
+      .from('inventory_items')
+      .select('item_name, item_type, satuan')
+      .in('item_type', activeTypes)
       .order('item_name', { ascending: true });
 
-    let items = [];
+    let names = [];
 
     if (!error && data && data.length > 0) {
-      // Kelompokkan per tipe
-      const pakan  = [...new Set(data.filter(d => d.delivery_type === 'pakan').map(d => d.item_name).filter(Boolean))];
-      const obat   = [...new Set(data.filter(d => d.delivery_type === 'obat').map(d => d.item_name).filter(Boolean))];
-      const lain   = [...new Set(data.filter(d => !['pakan','obat'].includes(d.delivery_type)).map(d => d.item_name).filter(Boolean))];
-
-      if (pakan.length)  items.push({ group: 'Pakan', names: pakan });
-      if (obat.length)   items.push({ group: 'Obat & Vitamin', names: obat });
-      if (lain.length)   items.push({ group: 'Lainnya', names: lain });
+      names = [...new Set(data.map(d => d.item_name).filter(Boolean))];
     }
 
-    // Fallback ke item dari DB.inventory jika tidak ada data pengiriman
-    if (items.length === 0) {
-      const invNames = [...new Set(DB.inventory.map(i => i.name).filter(Boolean))];
-      if (invNames.length) items.push({ group: 'Stok', names: invNames });
+    // Fallback ke deliveries jika inventory_items kosong
+    if (names.length === 0) {
+      const { data: dData } = await client
+        .from('deliveries')
+        .select('item_name, delivery_type')
+        .in('delivery_type', activeTypes)
+        .order('item_name', { ascending: true });
+      if (dData?.length) {
+        names = [...new Set(dData.map(d => d.item_name).filter(Boolean))];
+      }
     }
 
-    // Rebuild options
-    sel.innerHTML = '<option value="">Pilih item...</option>';
-    items.forEach(group => {
-      const optgroup = document.createElement('optgroup');
-      optgroup.label = group.group;
-      group.names.forEach(name => {
+    // Rebuild options — flat list sesuai tab (tidak perlu optgroup)
+    sel.innerHTML = '<option value="">Pilih ' + tabLabel + '...</option>';
+
+    if (names.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Belum ada data ' + tabLabel;
+      opt.disabled = true;
+      sel.appendChild(opt);
+    } else {
+      names.forEach(name => {
         const opt = document.createElement('option');
         opt.value = name;
         opt.textContent = name;
         if (name === prevVal) opt.selected = true;
-        optgroup.appendChild(opt);
+        sel.appendChild(opt);
       });
-      sel.appendChild(optgroup);
-    });
-
-    // Jika tidak ada item sama sekali, tampilkan placeholder info
-    if (items.length === 0) {
-      const opt = document.createElement('option');
-      opt.value = '';
-      opt.textContent = 'Belum ada data pengiriman';
-      opt.disabled = true;
-      sel.appendChild(opt);
     }
 
   } catch (e) {
     console.warn('[Inventory] _loadInvItemSelect:', e.message);
+    sel.innerHTML = '<option value="">Pilih ' + tabLabel + '...</option>';
   }
 }
 
@@ -1174,6 +1185,7 @@ function switchInvTab(tab, btn) {
   document.querySelectorAll('#page-inventory .tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderInvList();
+  _loadInvItemSelect(); // reload dropdown sesuai tab aktif
 }
 
 async function updateStock() {
