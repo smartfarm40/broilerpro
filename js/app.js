@@ -4990,13 +4990,12 @@ async function _loadFeedCodes() {
   const sel = document.getElementById('input-feed-code');
   if (!sel) return;
 
-  const currentVal = sel.value; // simpan nilai yang sedang dipilih
+  const currentVal = sel.value;
 
   try {
     const client = AUTH.getSupabase();
     if (!client) throw new Error('no client');
 
-    // Ambil kandang aktif
     const activeFlock = DB.flocks.find(f => f.active);
     const kandangId   = activeFlock ? (activeFlock._dbId || activeFlock.id) : null;
 
@@ -5007,7 +5006,7 @@ async function _loadFeedCodes() {
       .eq('delivery_type', 'pakan')
       .order('tanggal_kirim', { ascending: false });
 
-    // Filter per kandang jika operator
+    // Operator: filter per kandang yang ditugaskan
     if (AUTH.role === 'operator' && kandangId) {
       q = q.eq('kandang_id', kandangId);
     }
@@ -5015,10 +5014,11 @@ async function _loadFeedCodes() {
     const { data, error } = await q;
 
     let codes = [];
+    let fromDelivery = false;
 
     if (!error && data && data.length > 0) {
-      // Ambil nama unik dari pengiriman
       codes = [...new Set(data.map(d => d.item_name).filter(Boolean))];
+      fromDelivery = true;
     }
 
     // Fallback ke default jika tidak ada data pengiriman
@@ -5029,16 +5029,15 @@ async function _loadFeedCodes() {
     // Rebuild options
     const prevVal = currentVal || sel.value;
     sel.innerHTML = codes.map(code =>
-      `<option value="${code}" ${code === prevVal ? 'selected' : ''}>${code}</option>`
+      `<option value="${code}" ${code === prevVal ? 'selected' : ''}>${code}${fromDelivery ? '' : ''}</option>`
     ).join('');
 
-    // Jika nilai sebelumnya tidak ada di list baru, tambahkan
+    // Jika nilai sebelumnya tidak ada di list baru, tambahkan di atas
     if (prevVal && !codes.includes(prevVal)) {
       sel.innerHTML = `<option value="${prevVal}" selected>${prevVal}</option>` + sel.innerHTML;
     }
 
   } catch (e) {
-    // Fallback ke default tanpa error
     const prevVal = sel.value;
     sel.innerHTML = FEED_CODE_DEFAULTS.map(code =>
       `<option value="${code}" ${code === prevVal ? 'selected' : ''}>${code}</option>`
