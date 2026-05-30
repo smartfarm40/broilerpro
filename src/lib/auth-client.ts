@@ -1,75 +1,55 @@
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-// Client-side Supabase instance (singleton)
-let client: ReturnType<typeof createClient> | null = null;
-
-function getSupabaseClient() {
-  if (!client) {
-    client = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    });
-  }
-  return client;
-}
-
-export const supabaseAuth = getSupabaseClient();
+"use client";
 
 /**
- * Sign in with email and password
+ * Sign in with email and password via API route (sets httpOnly cookie)
  */
 export async function signIn({ email, password }: { email: string; password: string }) {
-  const sb = getSupabaseClient();
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) return { error: { message: error.message } };
-  return { data, error: null };
+  try {
+    const res = await fetch("/api/auth/sign-in", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { error: { message: data.error || "Login gagal" } };
+    }
+
+    return { data, error: null };
+  } catch {
+    return { error: { message: "Gagal terhubung ke server" } };
+  }
 }
 
 /**
- * Sign up with email and password
+ * Sign up with email and password via API route
  */
 export async function signUp({ email, password, name }: { email: string; password: string; name: string }) {
-  const sb = getSupabaseClient();
-  const { data, error } = await sb.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { nama: name, name },
-    },
-  });
-  if (error) return { error: { message: error.message } };
-  return { data, error: null };
+  try {
+    const res = await fetch("/api/auth/sign-up", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, name }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { error: { message: data.error || "Registrasi gagal" } };
+    }
+
+    return { data, error: null };
+  } catch {
+    return { error: { message: "Gagal terhubung ke server" } };
+  }
 }
 
 /**
- * Sign out
+ * Sign out - clears cookie via API route
  */
 export async function signOut() {
-  const sb = getSupabaseClient();
-  await sb.auth.signOut();
+  await fetch("/api/auth/sign-out", { method: "POST" });
   window.location.href = "/login";
-}
-
-/**
- * Get current session (client-side)
- */
-export async function getSession() {
-  const sb = getSupabaseClient();
-  const { data: { session } } = await sb.auth.getSession();
-  return session;
-}
-
-/**
- * Hook-like function to use session reactively (for components)
- */
-export function useSession() {
-  // This is a simplified version - for real reactivity, 
-  // use supabaseAuth.auth.onAuthStateChange in a useEffect
-  return { data: null };
 }
