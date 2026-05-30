@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const publicPaths = ["/login", "/register", "/api/auth"];
+const publicPaths = ["/login", "/register", "/api/auth", "/api/"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,10 +10,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow static files and API routes
+  if (pathname.startsWith("/_next") || pathname.startsWith("/icon") || pathname.includes(".")) {
+    return NextResponse.next();
+  }
+
   // Check for Supabase auth cookies
-  // Supabase stores session in cookies with pattern: sb-<project-ref>-auth-token
-  const hasAuthCookie = request.cookies.getAll().some(
-    (cookie) => cookie.name.includes("auth-token") || cookie.name.includes("sb-")
+  const cookies = request.cookies.getAll();
+  const hasAuthCookie = cookies.some(
+    (cookie) => cookie.name.includes("auth-token") || cookie.name.startsWith("sb-")
   );
 
   if (!hasAuthCookie) {
@@ -26,5 +31,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|icon/).*)",
+  ],
 };
