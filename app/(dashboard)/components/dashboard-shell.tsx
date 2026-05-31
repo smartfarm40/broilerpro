@@ -113,7 +113,7 @@ export function DashboardShell({ children, user, organization, role }: Dashboard
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-muted/30">
-        <div className="p-4 md:p-6 lg:p-8">{children}</div>
+        <div className="p-4 pt-16 md:p-6 md:pt-6 lg:p-8">{children}</div>
       </main>
     </div>
   );
