@@ -131,8 +131,8 @@ function InviteConfirmContent() {
         {state === "loading" && (
           <>
             <CardHeader className="text-center">
-              <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center">
-                <img src="/icon/favicon.svg" alt="Broiler Monitor" className="h-14 w-14" />
+              <div className="mx-auto mb-2 flex h-20 w-20 items-center justify-center">
+                <img src="/icon/favicon.svg" alt="Broiler Monitor" className="h-20 w-20" />
               </div>
               <CardTitle className="text-xl">Memverifikasi Undangan...</CardTitle>
             </CardHeader>
@@ -147,8 +147,8 @@ function InviteConfirmContent() {
         {state === "form" && (
           <>
             <CardHeader className="text-center">
-              <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center">
-                <img src="/icon/favicon.svg" alt="Broiler Monitor" className="h-14 w-14" />
+              <div className="mx-auto mb-2 flex h-20 w-20 items-center justify-center">
+                <img src="/icon/favicon.svg" alt="Broiler Monitor" className="h-20 w-20" />
               </div>
               <CardTitle className="text-xl">Selamat Datang!</CardTitle>
               <CardDescription>

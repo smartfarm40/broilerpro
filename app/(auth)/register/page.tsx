@@ -9,8 +9,8 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-primary-diagonal px-4">
       <Card className="w-full max-w-md shadow-2xl border-0">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center">
-            <img src="/icon/favicon.svg" alt="Broiler Monitor" className="h-14 w-14" />
+          <div className="mx-auto mb-2 flex h-20 w-20 items-center justify-center">
+            <img src="/icon/favicon.svg" alt="Broiler Monitor" className="h-20 w-20" />
           </div>
           <CardTitle className="text-2xl font-bold">Pendaftaran Akun</CardTitle>
           <CardDescription>
