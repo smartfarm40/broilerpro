@@ -1,54 +1,109 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/src/lib/auth";
+import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/src/lib/supabase";
-import { headers } from "next/headers";
 import { nanoid } from "@/src/lib/utils";
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const body = await request.json();
+  const { token, name, password } = body;
+
+  if (!token || !name || !password) {
+    return NextResponse.json({ error: "Token, nama, dan password wajib diisi" }, { status: 400 });
   }
 
-  const email = session.user.email;
+  if (password.length < 8) {
+    return NextResponse.json({ error: "Password minimal 8 karakter" }, { status: 400 });
+  }
 
-  // Find pending invitation for this email
+  // Find invitation by token
   const { data: invitation } = await supabase
     .from("invitations")
     .select("*")
-    .eq("email", email)
+    .eq("token", token)
     .eq("status", "pending")
     .limit(1)
     .single();
 
   if (!invitation) {
-    return NextResponse.json({ error: "Tidak ada undangan" }, { status: 404 });
+    return NextResponse.json({ error: "Undangan tidak ditemukan atau sudah digunakan" }, { status: 404 });
   }
 
   // Check expiry
   if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
-    await supabase
-      .from("invitations")
-      .update({ status: "expired" })
-      .eq("id", invitation.id);
-    return NextResponse.json({ error: "Undangan sudah kadaluarsa" }, { status: 400 });
+    await supabase.from("invitations").update({ status: "expired" }).eq("id", invitation.id);
+    return NextResponse.json({ error: "Undangan sudah kadaluarsa" }, { status: 410 });
   }
 
-  // Add user to organization
-  await supabase.from("organization_members").insert({
-    id: nanoid(),
-    user_id: session.user.id,
-    organization_id: invitation.organization_id,
-    role: invitation.role,
+  // Create user via Supabase Auth (using service role)
+  const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+  // Check if user already exists
+  const { data: existingUsers } = await adminClient.auth.admin.listUsers();
+  const existingUser = existingUsers?.users?.find(u => u.email === invitation.email);
+
+  let userId: string;
+
+  if (existingUser) {
+    // User exists — update password and metadata
+    userId = existingUser.id;
+    await adminClient.auth.admin.updateUserById(userId, {
+      password,
+      user_metadata: { nama: name, name },
+      email_confirm: true,
+    });
+  } else {
+    // Create new user
+    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+      email: invitation.email,
+      password,
+      user_metadata: { nama: name, name },
+      email_confirm: true,
+    });
+
+    if (createError || !newUser.user) {
+      return NextResponse.json({ error: createError?.message || "Gagal membuat akun" }, { status: 500 });
+    }
+    userId = newUser.user.id;
+  }
+
+  // Ensure user exists in public.users table
+  await supabase.from("users").upsert({
+    id: userId,
+    name,
+    email: invitation.email,
+    email_verified: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   });
 
-  // Create coop assignments if specified in invitation
+  // Add user to organization
+  const { data: existingMember } = await supabase
+    .from("organization_members")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("organization_id", invitation.organization_id)
+    .limit(1)
+    .single();
+
+  if (!existingMember) {
+    await supabase.from("organization_members").insert({
+      id: nanoid(),
+      user_id: userId,
+      organization_id: invitation.organization_id,
+      role: invitation.role,
+    });
+  }
+
+  // Create coop assignments if specified
   if (invitation.assigned_coop_ids) {
     try {
       const coopIds = JSON.parse(invitation.assigned_coop_ids) as string[];
       const assignments = coopIds.map((coopId) => ({
         id: nanoid(),
-        user_id: session.user.id,
+        user_id: userId,
         coop_id: coopId,
         organization_id: invitation.organization_id,
       }));
@@ -59,10 +114,32 @@ export async function POST(request: NextRequest) {
   }
 
   // Mark invitation as accepted
-  await supabase
-    .from("invitations")
-    .update({ status: "accepted" })
-    .eq("id", invitation.id);
+  await supabase.from("invitations").update({ status: "accepted" }).eq("id", invitation.id);
 
-  return NextResponse.json({ success: true, role: invitation.role });
+  // Sign in the user and return session cookie
+  const { data: signInData, error: signInError } = await adminClient.auth.signInWithPassword({
+    email: invitation.email,
+    password,
+  });
+
+  const response = NextResponse.json({ success: true, role: invitation.role });
+
+  if (signInData?.session && !signInError) {
+    response.cookies.set("sb-auth-token", signInData.session.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+    response.cookies.set("sb-refresh-token", signInData.session.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+    });
+  }
+
+  return response;
 }
