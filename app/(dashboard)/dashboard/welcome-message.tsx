@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 
-export function Greeting({ name }: { name: string }) {
+export function WelcomeMessage({ name }: { name: string }) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(false), 25000);
+    const timer = setTimeout(() => setVisible(false), 10000);
     return () => clearTimeout(timer);
   }, []);
 

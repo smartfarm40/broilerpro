@@ -3,7 +3,7 @@ import { supabase } from "@/src/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { Greeting } from "./greeting";
+import { WelcomeMessage } from "./welcome-message";
 
 export default async function DashboardPage() {
   const session = await requireSession();
@@ -60,7 +60,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl md:text-2xl font-bold text-gradient-primary">Dashboard</h1>
-        <Greeting name={session.user.name} />
+        <WelcomeMessage name={session.user.name} />
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
