@@ -51,18 +51,18 @@ export async function POST(request: NextRequest) {
   });
 
   if (createError) {
-    // If user already exists, try to get them and update password
+    // If user already exists, try to update their password
     if (createError.message.includes("already") || createError.message.includes("exists") || createError.status === 422) {
-      // Get user by email
-      const { data: { users } } = await adminClient.auth.admin.listUsers({ filter: invitation.email });
-      const existingUser = users?.find(u => u.email === invitation.email);
+      // Get user by signing in won't work (don't know old password)
+      // Use admin getUserByEmail equivalent - list and filter
+      const { data: listData } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const existingUser = listData?.users?.find(u => u.email === invitation.email);
       
       if (existingUser) {
         userId = existingUser.id;
         await adminClient.auth.admin.updateUserById(userId, {
           password,
           user_metadata: { nama: name, name },
-          email_confirm: true,
         });
       } else {
         return NextResponse.json({ error: "Gagal membuat akun: " + createError.message }, { status: 500 });

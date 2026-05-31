@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, capacity, location } = body;
+  const { name, capacity, location, latitude, longitude } = body;
 
   if (!name || !capacity) {
     return NextResponse.json({ error: "Nama dan kapasitas wajib diisi" }, { status: 400 });
@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
     name,
     capacity: parseInt(capacity),
     location: location || null,
+    latitude: latitude || null,
+    longitude: longitude || null,
     status: "empty",
   });
 
