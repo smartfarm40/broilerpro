@@ -2,7 +2,6 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export type Session = {
@@ -12,21 +11,36 @@ export type Session = {
 
 /**
  * Auth object yang menyediakan API kompatibel dengan pola sebelumnya.
- * Semua API routes bisa tetap pakai: auth.api.getSession({ headers })
+ * Semua API routes bisa tetap pakai: auth.api.getSession({ headers: await headers() })
  */
 export const auth = {
   api: {
     /**
      * Get session dari Supabase Auth menggunakan cookie.
-     * Kompatibel dengan pola: auth.api.getSession({ headers: await headers() })
      */
-    async getSession(_opts?: { headers?: Headers }): Promise<Session | null> {
-      const cookieStore = await cookies();
-      const accessToken = cookieStore.get("sb-auth-token")?.value;
+    async getSession(opts?: { headers?: Headers }): Promise<Session | null> {
+      let accessToken: string | undefined;
+
+      // Try reading from cookies() first (works in server components & route handlers)
+      try {
+        const cookieStore = await cookies();
+        accessToken = cookieStore.get("sb-auth-token")?.value;
+      } catch {
+        // cookies() might fail in some contexts
+      }
+
+      // Fallback: parse from Cookie header if passed
+      if (!accessToken && opts?.headers) {
+        const cookieHeader = opts.headers.get("cookie") || "";
+        const match = cookieHeader.match(/sb-auth-token=([^;]+)/);
+        if (match) {
+          accessToken = match[1];
+        }
+      }
 
       if (!accessToken) return null;
 
-      // Use service role key to verify the token
+      // Verify token with Supabase
       const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
       const { data: { user }, error } = await supabase.auth.getUser(accessToken);
 
