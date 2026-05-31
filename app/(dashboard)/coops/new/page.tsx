@@ -61,6 +61,7 @@ export default function NewCoopPage() {
       tileLayer: (url: string, opts: Record<string, unknown>) => { addTo: (map: unknown) => void };
       marker: (latlng: [number, number]) => { addTo: (map: unknown) => unknown; setLatLng: (latlng: [number, number]) => void; getLatLng: () => { lat: number; lng: number } };
       latLng: (lat: number, lng: number) => unknown;
+      control: { layers: (baseMaps: Record<string, unknown>, overlays: Record<string, unknown>, opts: Record<string, unknown>) => { addTo: (map: unknown) => void } };
     };
 
     // Default center: Indonesia
@@ -72,10 +73,23 @@ export default function NewCoopPage() {
       zoomControl: true,
     }) as { on: (event: string, fn: (e: { latlng: { lat: number; lng: number } }) => void) => void; setView: (center: [number, number], zoom: number) => void };
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    // Base layers
+    const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
-    }).addTo(map as unknown);
+    });
+
+    const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      attribution: '© Esri',
+      maxZoom: 19,
+    });
+
+    // Add default layer
+    streetLayer.addTo(map as unknown);
+
+    // Layer control
+    const baseMaps = { "🗺️ Peta": streetLayer, "🛰️ Satelit": satelliteLayer };
+    L.control.layers(baseMaps, {}, { position: "topright" }).addTo(map as unknown);
 
     mapInstanceRef.current = map;
 
