@@ -24,6 +24,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Email dan role wajib diisi" }, { status: 400 });
   }
 
+  // Check if there's already a pending invitation for this email in this org
+  const { data: existingInvite } = await supabase
+    .from("invitations")
+    .select("*")
+    .eq("email", email)
+    .eq("organization_id", org.id)
+    .eq("status", "pending")
+    .limit(1)
+    .single();
+
+  if (existingInvite) {
+    // Check if invitation is still valid (not expired)
+    const isExpired = new Date(existingInvite.expires_at) < new Date();
+    if (!isExpired) {
+      return NextResponse.json(
+        { error: `Undangan untuk ${email} sudah dikirim dan masih menunggu konfirmasi. Berlaku hingga ${new Date(existingInvite.expires_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}.` },
+        { status: 409 }
+      );
+    }
+    // If expired, mark as expired so a new one can be created
+    await supabase
+      .from("invitations")
+      .update({ status: "expired" })
+      .eq("id", existingInvite.id);
+  }
+
   // Check if user already exists and is already a member
   const { data: existingUser } = await supabase
     .from("users")
