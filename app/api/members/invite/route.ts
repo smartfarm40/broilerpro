@@ -17,11 +17,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Format request tidak valid" }, { status: 400 });
+  }
+
   const { email, role, coopIds } = body;
 
   if (!email || !role) {
     return NextResponse.json({ error: "Email dan role wajib diisi" }, { status: 400 });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return NextResponse.json({ error: "Format email tidak valid" }, { status: 400 });
+  }
+
+  // Validate role
+  const validRoles = ["manager", "supervisor", "operator", "viewer"];
+  if (!validRoles.includes(role)) {
+    return NextResponse.json({ error: "Role tidak valid" }, { status: 400 });
   }
 
   // Check if there's already a pending invitation for this email in this org

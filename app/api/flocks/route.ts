@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
   }
 
   const flockId = nanoid();
-  await supabase.from("flocks").insert({
+  const { error: insertError } = await supabase.from("flocks").insert({
     id: flockId,
     coop_id: coopId,
     organization_id: org.id,
@@ -87,6 +87,13 @@ export async function POST(request: NextRequest) {
     notes: notes || null,
     status: "active",
   });
+
+  if (insertError) {
+    if (insertError.code === "23505") {
+      return NextResponse.json({ error: "Kandang ini sudah memiliki flock aktif" }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Gagal membuat flock: " + insertError.message }, { status: 500 });
+  }
 
   // Update coop status to active
   await supabase.from("coops").update({ status: "active" }).eq("id", coopId);

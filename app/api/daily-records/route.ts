@@ -32,6 +32,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
   }
 
+  // Input validation
+  if (deadCount !== undefined && (deadCount < 0 || !Number.isInteger(Number(deadCount)))) {
+    return NextResponse.json({ error: "Jumlah mati harus bilangan bulat positif" }, { status: 400 });
+  }
+  if (cullCount !== undefined && (cullCount < 0 || !Number.isInteger(Number(cullCount)))) {
+    return NextResponse.json({ error: "Jumlah culling harus bilangan bulat positif" }, { status: 400 });
+  }
+  if (avgWeight !== undefined && avgWeight < 0) {
+    return NextResponse.json({ error: "Berat rata-rata tidak boleh negatif" }, { status: 400 });
+  }
+  if (feedIn !== undefined && feedIn < 0) {
+    return NextResponse.json({ error: "Pakan masuk tidak boleh negatif" }, { status: 400 });
+  }
+
   // Verify flock belongs to org
   const { data: flock } = await supabase
     .from("flocks")
@@ -77,6 +91,13 @@ export async function POST(request: NextRequest) {
     : flock.doc_count;
   const remainingPopulation = previousPopulation - (deadCount || 0) - (cullCount || 0);
 
+  // Validate: population cannot go negative
+  if (remainingPopulation < 0) {
+    return NextResponse.json({ 
+      error: `Jumlah mati + culling (${(deadCount || 0) + (cullCount || 0)}) melebihi populasi tersisa (${previousPopulation})` 
+    }, { status: 400 });
+  }
+
   // Calculate feed consumed
   const feedConsumed = (feedIn || 0) - (feedRemaining || 0);
 
@@ -105,7 +126,7 @@ export async function POST(request: NextRequest) {
   });
 
   const recordId = nanoid();
-  await supabase.from("daily_records").insert({
+  const { error: insertError } = await supabase.from("daily_records").insert({
     id: recordId,
     flock_id: flockId,
     organization_id: org.id,
@@ -135,6 +156,13 @@ export async function POST(request: NextRequest) {
     notes: notes || null,
     created_by: session.user.id,
   });
+
+  if (insertError) {
+    if (insertError.code === "23505") {
+      return NextResponse.json({ error: "Recording untuk tanggal ini sudah ada" }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Gagal menyimpan: " + insertError.message }, { status: 500 });
+  }
 
   return NextResponse.json({ id: recordId, metrics });
 }

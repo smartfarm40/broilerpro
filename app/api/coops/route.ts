@@ -32,24 +32,43 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Format request tidak valid" }, { status: 400 });
+  }
+
   const { name, capacity, location, latitude, longitude } = body;
 
   if (!name || !capacity) {
     return NextResponse.json({ error: "Nama dan kapasitas wajib diisi" }, { status: 400 });
   }
 
+  const parsedCapacity = parseInt(capacity);
+  if (isNaN(parsedCapacity) || parsedCapacity < 1 || parsedCapacity > 100000) {
+    return NextResponse.json({ error: "Kapasitas harus antara 1 - 100.000 ekor" }, { status: 400 });
+  }
+
+  if (name.length > 100) {
+    return NextResponse.json({ error: "Nama kandang maksimal 100 karakter" }, { status: 400 });
+  }
+
   const coopId = nanoid();
-  await supabase.from("coops").insert({
+  const { error: insertError } = await supabase.from("coops").insert({
     id: coopId,
     organization_id: org.id,
-    name,
-    capacity: parseInt(capacity),
-    location: location || null,
+    name: name.trim(),
+    capacity: parsedCapacity,
+    location: location?.trim() || null,
     latitude: latitude || null,
     longitude: longitude || null,
     status: "empty",
   });
+
+  if (insertError) {
+    return NextResponse.json({ error: "Gagal menambah kandang: " + insertError.message }, { status: 500 });
+  }
 
   return NextResponse.json({ id: coopId, name });
 }
