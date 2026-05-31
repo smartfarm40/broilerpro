@@ -35,22 +35,11 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET requests
   if (request.method !== "GET") return;
 
-  // Skip API calls and auth routes (always network)
-  if (request.url.includes("/api/")) return;
+  // Skip API calls, auth routes, and Next.js internals
+  if (request.url.includes("/api/") || request.url.includes("/_next/")) return;
 
-  // For navigation requests - network first
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request).catch(() => caches.match("/dashboard") || caches.match(request))
-    );
-    return;
-  }
-
-  // For static assets - cache first
-  if (
-    request.url.includes("/icon/") ||
-    request.url.includes("/_next/static/")
-  ) {
+  // For static assets only - cache first
+  if (request.url.includes("/icon/") || request.url.includes("/sw.js")) {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;
@@ -60,22 +49,11 @@ self.addEventListener("fetch", (event) => {
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return response;
-        });
+        }).catch(() => cached || new Response("Offline", { status: 503 }));
       })
     );
     return;
   }
 
-  // Default - network first with cache fallback
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(request))
-  );
+  // All other requests - network only (don't cache HTML pages)
 });
