@@ -50,10 +50,10 @@ export default async function PerformancePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Performa Kandang</h1>
-        <p className="text-muted-foreground">Perbandingan performa semua flock aktif</p>
+        <h1 className="text-xl md:text-2xl font-bold">Performa Kandang</h1>
+        <p className="text-sm text-muted-foreground">Perbandingan performa semua flock aktif</p>
       </div>
 
       {sorted.length === 0 ? (
@@ -66,8 +66,61 @@ export default async function PerformancePage() {
         </Card>
       ) : (
         <>
-          {/* Ranking Table */}
-          <Card>
+          {/* Mobile: Card-based ranking */}
+          <div className="space-y-3 md:hidden">
+            {sorted.map(({ flock, record, coop }, index) => {
+              const badge = getPerformanceBadge(record?.ip_score || 0);
+              const startDate = new Date(flock.start_date);
+              const today = new Date();
+              const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+              return (
+                <Card key={flock.id} className="overflow-hidden">
+                  <div className="flex items-stretch">
+                    {/* Rank number */}
+                    <div className="flex items-center justify-center w-10 bg-gradient-primary text-white font-bold text-lg shrink-0">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 p-3 space-y-2">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-sm">{coop?.name || "-"}</p>
+                          <p className="text-[11px] text-muted-foreground capitalize">
+                            {flock.strain.replace("_", " ")} • {dayNumber} hari
+                          </p>
+                        </div>
+                        <Badge className={badge.color} variant="secondary">
+                          {badge.label}
+                        </Badge>
+                      </div>
+                      {/* Stats grid */}
+                      <div className="grid grid-cols-4 gap-1 text-center">
+                        <div className="rounded-md bg-muted/50 p-1.5">
+                          <p className="text-[10px] text-muted-foreground">Berat</p>
+                          <p className="text-xs font-bold">{record?.avg_weight?.toFixed(0) || "-"}g</p>
+                        </div>
+                        <div className="rounded-md bg-muted/50 p-1.5">
+                          <p className="text-[10px] text-muted-foreground">FCR</p>
+                          <p className="text-xs font-bold">{record?.fcr?.toFixed(2) || "-"}</p>
+                        </div>
+                        <div className="rounded-md bg-muted/50 p-1.5">
+                          <p className="text-[10px] text-muted-foreground">ADG</p>
+                          <p className="text-xs font-bold">{record?.adg?.toFixed(1) || "-"}</p>
+                        </div>
+                        <div className="rounded-md bg-muted/50 p-1.5">
+                          <p className="text-[10px] text-muted-foreground">IP</p>
+                          <p className="text-xs font-bold">{record?.ip_score?.toFixed(0) || "-"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Desktop: Table view */}
+          <Card className="hidden md:block">
             <CardHeader>
               <CardTitle>Ranking Performa (IP Score)</CardTitle>
             </CardHeader>
@@ -116,30 +169,24 @@ export default async function PerformancePage() {
             </CardContent>
           </Card>
 
-          {/* Performance Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Summary cards - both mobile & desktop */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {sorted.map(({ flock, record, coop }) => (
               <Card key={flock.id}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{coop?.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">FCR</p>
-                      <p className="text-lg font-bold">{record?.fcr?.toFixed(3) || "-"}</p>
+                <CardContent className="p-3 md:p-4">
+                  <p className="font-semibold text-xs md:text-sm truncate">{coop?.name}</p>
+                  <div className="mt-2 space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">FCR</span>
+                      <span className="font-bold">{record?.fcr?.toFixed(2) || "-"}</span>
                     </div>
-                    <div>
-                      <p className="text-muted-foreground">IP Score</p>
-                      <p className="text-lg font-bold">{record?.ip_score?.toFixed(1) || "-"}</p>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">IP</span>
+                      <span className="font-bold">{record?.ip_score?.toFixed(0) || "-"}</span>
                     </div>
-                    <div>
-                      <p className="text-muted-foreground">ADG</p>
-                      <p className="text-lg font-bold">{record?.adg?.toFixed(1) || "-"} g</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Deplesi</p>
-                      <p className="text-lg font-bold">{record?.depletion?.toFixed(2) || "-"}%</p>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Deplesi</span>
+                      <span className="font-bold">{record?.depletion?.toFixed(1) || "-"}%</span>
                     </div>
                   </div>
                 </CardContent>
