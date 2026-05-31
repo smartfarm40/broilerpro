@@ -60,6 +60,7 @@ export default function NewCoopPage() {
       map: (el: HTMLElement, opts: Record<string, unknown>) => unknown;
       tileLayer: (url: string, opts: Record<string, unknown>) => { addTo: (map: unknown) => void };
       marker: (latlng: [number, number]) => { addTo: (map: unknown) => unknown; setLatLng: (latlng: [number, number]) => void; getLatLng: () => { lat: number; lng: number } };
+      circleMarker: (latlng: [number, number], opts: Record<string, unknown>) => { addTo: (map: unknown) => void };
       latLng: (lat: number, lng: number) => unknown;
       control: { layers: (baseMaps: Record<string, unknown>, overlays: Record<string, unknown>, opts: Record<string, unknown>) => { addTo: (map: unknown) => void } };
     };
@@ -93,15 +94,23 @@ export default function NewCoopPage() {
 
     mapInstanceRef.current = map;
 
-    // Try to get user's location
+    // Auto-center to user's location immediately
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
-          map.setView([latitude, longitude], 15);
+          map.setView([latitude, longitude], 16);
+          // Add a blue circle to show user's position
+          L.circleMarker([latitude, longitude], {
+            radius: 8,
+            color: "#4285F4",
+            fillColor: "#4285F4",
+            fillOpacity: 0.3,
+            weight: 2,
+          }).addTo(map as unknown);
         },
         () => {
-          // Fallback to default
+          // Fallback to default center
         },
         { enableHighAccuracy: true, timeout: 5000 }
       );
@@ -166,6 +175,20 @@ export default function NewCoopPage() {
     }
   }
 
+  function goToMyLocation() {
+    if (!navigator.geolocation || !mapInstanceRef.current) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        (mapInstanceRef.current as { setView: (center: [number, number], zoom: number) => void }).setView([latitude, longitude], 17);
+      },
+      () => {
+        alert("Tidak bisa mendapatkan lokasi. Pastikan GPS aktif dan izin lokasi diberikan.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <Card>
@@ -215,6 +238,17 @@ export default function NewCoopPage() {
               />
               {!mapReady && (
                 <p className="text-xs text-muted-foreground">Memuat peta...</p>
+              )}
+              {mapReady && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={goToMyLocation}
+                >
+                  📍 Posisi Saya Sekarang
+                </Button>
               )}
               {pin && (
                 <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 p-2.5">
