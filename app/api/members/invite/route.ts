@@ -85,6 +85,11 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     message: "Undangan berhasil dibuat",
-    inviteLink: `/invite/${token}`,
+    inviteLink: `/invite?token=${token}`,
+    token,
+    email,
+    role,
+    organizationName: org.name,
+    expiresAt,
   });
 }
