@@ -62,42 +62,6 @@ export function InviteMemberForm() {
     return `${baseUrl}${path}`;
   }
 
-  function getWhatsAppMessage(result: InviteResult) {
-    const fullLink = getFullInviteLink(result.inviteLink);
-    const expDate = new Date(result.expiresAt).toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    return `🐔 *Undangan Broiler Monitor*
-
-Halo! Anda diundang untuk bergabung ke *${result.organizationName}* sebagai *${ROLE_LABELS[result.role] || result.role}* di aplikasi Broiler Monitor.
-
-📋 *Detail Undangan:*
-• Organisasi: ${result.organizationName}
-• Role: ${ROLE_LABELS[result.role] || result.role}
-• Email: ${result.email}
-• Berlaku hingga: ${expDate}
-
-🔗 *Klik link berikut untuk mendaftar:*
-${fullLink}
-
-📌 *Langkah-langkah:*
-1. Buka link di atas
-2. Isi nama lengkap Anda
-3. Buat password baru
-4. Selesai! Anda bisa langsung menggunakan aplikasi
-
-_Link ini hanya berlaku 48 jam dan hanya bisa digunakan 1 kali._
-
----
-Broiler Monitor — Sistem Monitoring Farm Broiler
-${typeof window !== "undefined" ? window.location.origin : ""}`;
-  }
-
   function getInviteTextForCopy(result: InviteResult) {
     const fullLink = getFullInviteLink(result.inviteLink);
     const expDate = new Date(result.expiresAt).toLocaleDateString("id-ID", {
@@ -148,13 +112,6 @@ Link ini berlaku 48 jam dan hanya bisa digunakan 1 kali.`;
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
     }
-  }
-
-  function handleShareWhatsApp() {
-    if (!inviteResult) return;
-    const message = getWhatsAppMessage(inviteResult);
-    const encoded = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encoded}`, "_blank");
   }
 
   async function handleInvite(e: React.FormEvent) {
@@ -231,46 +188,29 @@ Link ini berlaku 48 jam dan hanya bisa digunakan 1 kali.`;
             </p>
           </div>
 
-          {/* Link preview */}
+          {/* Link display */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Link Undangan</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                readOnly
-                value={getFullInviteLink(inviteResult.inviteLink)}
-                className="text-xs bg-muted"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleCopyLink}
-                className="shrink-0"
-              >
-                {copied ? "✓ Tersalin" : "📋 Copy"}
-              </Button>
-            </div>
+            <Input
+              readOnly
+              value={getFullInviteLink(inviteResult.inviteLink)}
+              className="text-xs bg-muted"
+            />
           </div>
 
-          {/* Share buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Copy button */}
+          <div>
             <Button
               type="button"
               onClick={handleCopyLink}
-              variant="outline"
               className="w-full"
             >
               <span className="mr-2">📋</span>
-              {copied ? "Tersalin!" : "Copy Pesan Lengkap"}
+              {copied ? "✓ Tersalin!" : "Copy Pesan Undangan"}
             </Button>
-            <Button
-              type="button"
-              onClick={handleShareWhatsApp}
-              className="w-full bg-[#25D366] hover:bg-[#1da851] text-white"
-            >
-              <span className="mr-2">💬</span>
-              Kirim via WhatsApp
-            </Button>
+            <p className="text-xs text-muted-foreground mt-1.5 text-center">
+              Pesan berisi detail undangan lengkap — tinggal paste ke WhatsApp atau chat lainnya
+            </p>
           </div>
 
           {/* Preview */}
