@@ -25,35 +25,46 @@ export default async function DashboardPage() {
     .select("*")
     .eq("organization_id", org.id);
 
-  // Get latest records for active flocks
-  const latestRecords = [];
-  for (const flock of activeFlocks || []) {
-    const { data: record } = await supabase
+  // Get latest records for active flocks (single batched query)
+  let latestRecords: { flock: typeof activeFlocks extends (infer T)[] | null ? T : never; record: Record<string, unknown> }[] = [];
+  
+  if (activeFlocks && activeFlocks.length > 0) {
+    const flockIds = activeFlocks.map((f) => f.id);
+    
+    // Get latest record per flock using a single query
+    const { data: allRecords } = await supabase
       .from("daily_records")
       .select("*")
-      .eq("flock_id", flock.id)
+      .in("flock_id", flockIds)
       .eq("organization_id", org.id)
-      .order("date", { ascending: false })
-      .limit(1)
-      .single();
-    if (record) {
-      latestRecords.push({ flock, record });
+      .order("date", { ascending: false });
+
+    // Group by flock_id and take the first (latest) record per flock
+    const latestByFlock = new Map<string, Record<string, unknown>>();
+    for (const record of allRecords || []) {
+      if (!latestByFlock.has(record.flock_id)) {
+        latestByFlock.set(record.flock_id, record);
+      }
     }
+
+    latestRecords = activeFlocks
+      .filter((flock) => latestByFlock.has(flock.id))
+      .map((flock) => ({ flock, record: latestByFlock.get(flock.id)! }));
   }
 
   const totalPopulation = latestRecords.reduce(
-    (sum, { record }) => sum + (record.remaining_population || 0),
+    (sum, { record }) => sum + (Number(record.remaining_population) || 0),
     0
   );
 
   const activeCoopsCount = (allCoops || []).filter((c) => c.status === "active").length;
 
   const avgFcr = latestRecords.length > 0
-    ? latestRecords.reduce((sum, { record }) => sum + (record.fcr || 0), 0) / latestRecords.length
+    ? latestRecords.reduce((sum, { record }) => sum + (Number(record.fcr) || 0), 0) / latestRecords.length
     : 0;
 
   const avgIp = latestRecords.length > 0
-    ? latestRecords.reduce((sum, { record }) => sum + (record.ip_score || 0), 0) / latestRecords.length
+    ? latestRecords.reduce((sum, { record }) => sum + (Number(record.ip_score) || 0), 0) / latestRecords.length
     : 0;
 
   return (
@@ -135,15 +146,15 @@ export default async function DashboardPage() {
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Populasi</p>
-                            <p className="text-sm font-bold">{record.remaining_population?.toLocaleString("id-ID")}</p>
+                            <p className="text-sm font-bold">{Number(record.remaining_population)?.toLocaleString("id-ID") || "-"}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">FCR</p>
-                            <p className="text-sm font-bold">{record.fcr?.toFixed(2) || "-"}</p>
+                            <p className="text-sm font-bold">{Number(record.fcr)?.toFixed(2) || "-"}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">IP</p>
-                            <p className="text-sm font-bold">{record.ip_score?.toFixed(0) || "-"}</p>
+                            <p className="text-sm font-bold">{Number(record.ip_score)?.toFixed(0) || "-"}</p>
                           </div>
                         </div>
                       </div>
@@ -177,10 +188,10 @@ export default async function DashboardPage() {
                           <td className="py-2">
                             <Badge variant="outline" className="capitalize">{flock.strain.replace("_", " ")}</Badge>
                           </td>
-                          <td className="py-2">{record.remaining_population?.toLocaleString("id-ID")}</td>
+                          <td className="py-2">{Number(record.remaining_population)?.toLocaleString("id-ID") || "-"}</td>
                           <td className="py-2">{dayNumber} hari</td>
-                          <td className="py-2">{record.fcr?.toFixed(3) || "-"}</td>
-                          <td className="py-2">{record.ip_score?.toFixed(1) || "-"}</td>
+                          <td className="py-2">{Number(record.fcr)?.toFixed(3) || "-"}</td>
+                          <td className="py-2">{Number(record.ip_score)?.toFixed(1) || "-"}</td>
                         </tr>
                       );
                     })}

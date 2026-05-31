@@ -44,7 +44,16 @@ export const auth = {
       const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
       const { data: { user }, error } = await supabase.auth.getUser(accessToken);
 
-      if (error || !user) return null;
+      if (error || !user) {
+        // Clear stale cookie
+        try {
+          const cookieStore = await cookies();
+          cookieStore.delete("sb-auth-token");
+        } catch {
+          // Can't delete in some contexts
+        }
+        return null;
+      }
 
       return {
         user: {

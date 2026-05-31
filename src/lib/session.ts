@@ -18,20 +18,31 @@ export async function requireSession() {
 }
 
 export async function getUserOrganization(userId: string) {
-  const { data: member } = await supabase
+  const { data: member, error: memberError } = await supabase
     .from("organization_members")
     .select("*")
     .eq("user_id", userId)
     .limit(1)
     .single();
 
+  if (memberError && memberError.code !== "PGRST116") {
+    // Database error (not "no rows") — throw instead of redirecting
+    console.error("[session] getUserOrganization error:", memberError.message);
+    return null;
+  }
+
   if (!member) return null;
 
-  const { data: org } = await supabase
+  const { data: org, error: orgError } = await supabase
     .from("organizations")
     .select("*")
     .eq("id", member.organization_id)
     .single();
+
+  if (orgError) {
+    console.error("[session] getOrganization error:", orgError.message);
+    return null;
+  }
 
   return org ? { ...org, role: member.role as Role } : null;
 }
