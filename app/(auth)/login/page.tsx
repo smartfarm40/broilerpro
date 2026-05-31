@@ -83,7 +83,7 @@ export default function LoginPage() {
           <div className="mt-4 text-center text-sm text-muted-foreground">
             Belum punya akun?{" "}
             <Link href="/register" className="font-medium text-primary hover:underline">
-              Daftar Sekarang
+              Hubungi Admin
             </Link>
           </div>
         </CardContent>
