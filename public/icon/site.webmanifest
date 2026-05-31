@@ -1,23 +1,32 @@
 {
   "name": "Broiler Monitor",
   "short_name": "Broiler",
-  "description": "Aplikasi Monitoring Farm Broiler",
+  "description": "Aplikasi Monitoring & Manajemen Farm Ayam Broiler",
   "icons": [
+    {
+      "src": "/icon/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
     {
       "src": "/icon/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "maskable any"
     },
     {
       "src": "/icon/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "maskable any"
     }
   ],
   "theme_color": "#667eea",
   "background_color": "#ffffff",
   "display": "standalone",
-  "start_url": "/dashboard"
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/dashboard",
+  "categories": ["business", "productivity"],
+  "lang": "id"
 }

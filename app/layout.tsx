@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { ServiceWorkerRegister } from "@/components/sw-register";
+import { PWAInstaller } from "@/components/pwa-installer";
 
 const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
 
@@ -19,6 +21,8 @@ export const viewport: Viewport = {
   themeColor: "#667eea",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
@@ -52,7 +56,11 @@ export default function RootLayout({
       lang="id"
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, jetbrainsMono.variable)}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        {children}
+        <ServiceWorkerRegister />
+        <PWAInstaller />
+      </body>
     </html>
   );
 }
