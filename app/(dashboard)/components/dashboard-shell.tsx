@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { signOut } from "@/src/lib/auth-client";
 import { useRouter } from "next/navigation";
 import type { Role } from "@/src/lib/types";
@@ -118,6 +118,7 @@ export function DashboardShell({ children, user, organization, role }: Dashboard
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-64 p-0" aria-label="Menu navigasi">
+              <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
               <SidebarContent />
             </SheetContent>
           </Sheet>
@@ -134,6 +135,7 @@ export function DashboardShell({ children, user, organization, role }: Dashboard
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0" aria-label="Menu navigasi">
+              <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
               <SidebarContent />
             </SheetContent>
           </Sheet>

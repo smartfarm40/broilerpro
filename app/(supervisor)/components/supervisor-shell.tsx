@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { signOut } from "@/src/lib/auth-client";
 import { useRouter } from "next/navigation";
 
@@ -106,6 +106,7 @@ export function SupervisorShell({ children, user, organization }: SupervisorShel
             </button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0">
+            <SheetTitle className="sr-only">Menu Supervisor</SheetTitle>
             <div className="flex h-full flex-col bg-gradient-primary-vertical text-white">
               {/* Sidebar Header */}
               <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
