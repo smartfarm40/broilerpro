@@ -40,32 +40,37 @@ export async function POST(request: NextRequest) {
   // Create user via Supabase Auth (using service role)
   const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-  // Check if user already exists
-  const { data: existingUsers } = await adminClient.auth.admin.listUsers();
-  const existingUser = existingUsers?.users?.find(u => u.email === invitation.email);
-
   let userId: string;
 
-  if (existingUser) {
-    // User exists — update password and metadata
-    userId = existingUser.id;
-    await adminClient.auth.admin.updateUserById(userId, {
-      password,
-      user_metadata: { nama: name, name },
-      email_confirm: true,
-    });
-  } else {
-    // Create new user
-    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-      email: invitation.email,
-      password,
-      user_metadata: { nama: name, name },
-      email_confirm: true,
-    });
+  // Try to create user first
+  const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+    email: invitation.email,
+    password,
+    user_metadata: { nama: name, name },
+    email_confirm: true,
+  });
 
-    if (createError || !newUser.user) {
-      return NextResponse.json({ error: createError?.message || "Gagal membuat akun" }, { status: 500 });
+  if (createError) {
+    // If user already exists, try to get them and update password
+    if (createError.message.includes("already") || createError.message.includes("exists") || createError.status === 422) {
+      // Get user by email
+      const { data: { users } } = await adminClient.auth.admin.listUsers({ filter: invitation.email });
+      const existingUser = users?.find(u => u.email === invitation.email);
+      
+      if (existingUser) {
+        userId = existingUser.id;
+        await adminClient.auth.admin.updateUserById(userId, {
+          password,
+          user_metadata: { nama: name, name },
+          email_confirm: true,
+        });
+      } else {
+        return NextResponse.json({ error: "Gagal membuat akun: " + createError.message }, { status: 500 });
+      }
+    } else {
+      return NextResponse.json({ error: "Gagal membuat akun: " + createError.message }, { status: 500 });
     }
+  } else {
     userId = newUser.user.id;
   }
 
