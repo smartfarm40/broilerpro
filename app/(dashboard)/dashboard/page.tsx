@@ -57,50 +57,50 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gradient-primary">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl md:text-2xl font-bold text-gradient-primary">Dashboard</h1>
+        <p className="text-sm md:text-base text-muted-foreground">
           Selamat datang, {session.user.name}. Berikut ringkasan farm Anda.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Kandang Aktif</CardTitle>
+          <CardHeader className="pb-2 px-3 pt-3 md:px-6 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Kandang Aktif</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{activeCoopsCount}</div>
-            <p className="text-xs text-muted-foreground">dari {(allCoops || []).length} total kandang</p>
+          <CardContent className="px-3 pb-3 md:px-6 md:pb-6">
+            <div className="text-2xl md:text-3xl font-bold">{activeCoopsCount}</div>
+            <p className="text-[11px] md:text-xs text-muted-foreground">dari {(allCoops || []).length} total kandang</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Populasi</CardTitle>
+          <CardHeader className="pb-2 px-3 pt-3 md:px-6 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Total Populasi</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{totalPopulation.toLocaleString("id-ID")}</div>
-            <p className="text-xs text-muted-foreground">ekor ayam hidup</p>
+          <CardContent className="px-3 pb-3 md:px-6 md:pb-6">
+            <div className="text-2xl md:text-3xl font-bold">{totalPopulation.toLocaleString("id-ID")}</div>
+            <p className="text-[11px] md:text-xs text-muted-foreground">ekor ayam hidup</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Rata-rata FCR</CardTitle>
+          <CardHeader className="pb-2 px-3 pt-3 md:px-6 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Rata-rata FCR</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{avgFcr.toFixed(3)}</div>
-            <p className="text-xs text-muted-foreground">semua flock aktif</p>
+          <CardContent className="px-3 pb-3 md:px-6 md:pb-6">
+            <div className="text-2xl md:text-3xl font-bold">{avgFcr.toFixed(3)}</div>
+            <p className="text-[11px] md:text-xs text-muted-foreground">semua flock aktif</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Rata-rata IP</CardTitle>
+          <CardHeader className="pb-2 px-3 pt-3 md:px-6 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Rata-rata IP</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{avgIp.toFixed(1)}</div>
-            <p className="text-xs text-muted-foreground">Index Performa</p>
+          <CardContent className="px-3 pb-3 md:px-6 md:pb-6">
+            <div className="text-2xl md:text-3xl font-bold">{avgIp.toFixed(1)}</div>
+            <p className="text-[11px] md:text-xs text-muted-foreground">Index Performa</p>
           </CardContent>
         </Card>
       </div>

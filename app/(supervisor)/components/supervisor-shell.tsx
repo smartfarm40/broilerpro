@@ -166,7 +166,7 @@ export function SupervisorShell({ children, user, organization }: SupervisorShel
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 py-4">
+      <main className="flex-1 px-3 py-3 md:px-6 md:py-6 lg:px-8">
         {children}
       </main>
     </div>
