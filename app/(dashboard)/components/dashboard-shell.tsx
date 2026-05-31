@@ -27,12 +27,21 @@ const navigation = [
   { name: "Pengaturan", href: "/settings", icon: "⚙️", roles: ["owner"] },
 ];
 
+// Simplified mobile bottom nav for owner (summary-focused)
+const ownerMobileNav = [
+  { name: "Beranda", href: "/dashboard", icon: "📊" },
+  { name: "Kandang", href: "/coops", icon: "🏠" },
+  { name: "Performa", href: "/performance", icon: "📈" },
+  { name: "Notifikasi", href: "/notifications", icon: "🔔" },
+];
+
 export function DashboardShell({ children, user, organization, role }: DashboardShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const filteredNav = navigation.filter((item) => item.roles.includes(role));
+  const isOwnerOrManager = role === "owner" || role === "manager";
 
   async function handleLogout() {
     await signOut();
@@ -89,32 +98,79 @@ export function DashboardShell({ children, user, organization, role }: Dashboard
   );
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen flex-col md:flex-row">
       {/* Desktop Sidebar */}
-      <aside className="hidden w-64 md:block">
+      <aside className="hidden w-64 md:block shrink-0">
         <SidebarContent />
       </aside>
 
-      {/* Mobile Sidebar */}
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="fixed left-4 top-4 z-50 md:hidden bg-white shadow-md border-gray-200 text-gray-700 hover:bg-gray-100 h-10 w-10 rounded-full"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-64 p-0">
-          <SidebarContent />
-        </SheetContent>
-      </Sheet>
+      {/* Mobile Header (owner/manager) */}
+      {isOwnerOrManager && (
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-white/90 backdrop-blur-sm px-4 md:hidden">
+          <div className="flex items-center gap-2">
+            <img src="/icon/favicon.svg" alt="Logo" className="h-7 w-7" />
+            <span className="font-semibold text-sm truncate max-w-[140px]">{organization.name}</span>
+          </div>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <button className="p-2 rounded-lg hover:bg-muted" aria-label="Menu">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-64 p-0">
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+        </header>
+      )}
+
+      {/* Mobile Header (non-owner) */}
+      {!isOwnerOrManager && (
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-white/90 backdrop-blur-sm px-4 md:hidden">
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <button className="p-2 rounded-lg hover:bg-muted" aria-label="Menu">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+          <span className="font-semibold text-sm">{organization.name}</span>
+          <div className="w-8" />
+        </header>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-muted/30">
-        <div className="p-4 pt-16 md:p-6 md:pt-6 lg:p-8">{children}</div>
+        <div className="p-3 md:p-6 lg:p-8 pb-20 md:pb-6">{children}</div>
       </main>
+
+      {/* Mobile Bottom Nav (owner/manager only) */}
+      {isOwnerOrManager && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 backdrop-blur-sm safe-bottom md:hidden">
+          <div className="flex items-center justify-around h-14">
+            {ownerMobileNav.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors ${
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <span className="text-lg">{item.icon}</span>
+                  <span className="text-[10px] font-medium">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }

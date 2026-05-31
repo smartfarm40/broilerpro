@@ -2,6 +2,7 @@ import { requireSession, requireOrganization } from "@/src/lib/session";
 import { supabase } from "@/src/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const session = await requireSession();
@@ -106,47 +107,88 @@ export default async function DashboardPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Flock Aktif</CardTitle>
+        <CardHeader className="px-3 pt-3 pb-2 md:px-6 md:pt-6">
+          <CardTitle className="text-sm md:text-base">Flock Aktif</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 pb-3 md:px-6 md:pb-6">
           {(activeFlocks || []).length === 0 ? (
             <p className="text-sm text-muted-foreground">Belum ada flock aktif. Buat kandang dan mulai periode pemeliharaan baru.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="pb-2 font-medium">Kandang</th>
-                    <th className="pb-2 font-medium">Strain</th>
-                    <th className="pb-2 font-medium">Populasi</th>
-                    <th className="pb-2 font-medium">Umur</th>
-                    <th className="pb-2 font-medium">FCR</th>
-                    <th className="pb-2 font-medium">IP</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {latestRecords.map(({ flock, record }) => {
-                    const coop = (allCoops || []).find((c) => c.id === flock.coop_id);
-                    const startDate = new Date(flock.start_date);
-                    const today = new Date();
-                    const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-                    return (
-                      <tr key={flock.id} className="border-b last:border-0">
-                        <td className="py-2">{coop?.name || "-"}</td>
-                        <td className="py-2">
-                          <Badge variant="outline" className="capitalize">{flock.strain.replace("_", " ")}</Badge>
-                        </td>
-                        <td className="py-2">{record.remaining_population?.toLocaleString("id-ID")}</td>
-                        <td className="py-2">{dayNumber} hari</td>
-                        <td className="py-2">{record.fcr?.toFixed(3) || "-"}</td>
-                        <td className="py-2">{record.ip_score?.toFixed(1) || "-"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* Mobile: Card view */}
+              <div className="space-y-3 md:hidden">
+                {latestRecords.map(({ flock, record }) => {
+                  const coop = (allCoops || []).find((c) => c.id === flock.coop_id);
+                  const startDate = new Date(flock.start_date);
+                  const today = new Date();
+                  const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                  return (
+                    <Link key={flock.id} href={`/coops/${flock.coop_id}`} className="block">
+                      <div className="rounded-xl border bg-white p-3 space-y-2 active:scale-[0.98] transition-transform">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-sm">{coop?.name || "-"}</span>
+                          <Badge variant="outline" className="text-[10px] capitalize">{flock.strain.replace("_", " ")}</Badge>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 text-center">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Umur</p>
+                            <p className="text-sm font-bold">{dayNumber}h</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Populasi</p>
+                            <p className="text-sm font-bold">{record.remaining_population?.toLocaleString("id-ID")}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">FCR</p>
+                            <p className="text-sm font-bold">{record.fcr?.toFixed(2) || "-"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">IP</p>
+                            <p className="text-sm font-bold">{record.ip_score?.toFixed(0) || "-"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: Table view */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left">
+                      <th className="pb-2 font-medium">Kandang</th>
+                      <th className="pb-2 font-medium">Strain</th>
+                      <th className="pb-2 font-medium">Populasi</th>
+                      <th className="pb-2 font-medium">Umur</th>
+                      <th className="pb-2 font-medium">FCR</th>
+                      <th className="pb-2 font-medium">IP</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {latestRecords.map(({ flock, record }) => {
+                      const coop = (allCoops || []).find((c) => c.id === flock.coop_id);
+                      const startDate = new Date(flock.start_date);
+                      const today = new Date();
+                      const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                      return (
+                        <tr key={flock.id} className="border-b last:border-0">
+                          <td className="py-2">{coop?.name || "-"}</td>
+                          <td className="py-2">
+                            <Badge variant="outline" className="capitalize">{flock.strain.replace("_", " ")}</Badge>
+                          </td>
+                          <td className="py-2">{record.remaining_population?.toLocaleString("id-ID")}</td>
+                          <td className="py-2">{dayNumber} hari</td>
+                          <td className="py-2">{record.fcr?.toFixed(3) || "-"}</td>
+                          <td className="py-2">{record.ip_score?.toFixed(1) || "-"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
