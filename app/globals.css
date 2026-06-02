@@ -177,6 +177,15 @@
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
+  
+  /* ✨ Hardware Acceleration untuk animasi yang lebih smooth */
+  .will-change-contents,
+  .will-change-transform,
+  .will-change-colors {
+    will-change: contents, transform, color;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
 }
 
 /* Responsive utilities */
@@ -207,6 +216,38 @@
     }
   }
 
+  /* ✨ Optimasi Sheet animation untuk menu yang lebih cepat */
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+
+  [data-state="open"] {
+    animation: slideIn 0.2s ease-out !important;
+    transform: translateZ(0);
+  }
+
+  [data-state="closed"] {
+    animation: slideOut 0.15s ease-in !important;
+  }
+
   /* Navigation link transitions */
   a, button {
     transition: all 0.15s ease;
@@ -223,7 +264,18 @@
 
   /* Sheet/drawer animation override for smoother feel */
   [data-slot="sheet-content"] {
-    transition-duration: 0.25s !important;
+    transition-duration: 0.2s !important;
+  }
+
+  /* Reduce motion respects */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
