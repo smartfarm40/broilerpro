@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,6 @@ const navigation = [
   { name: "Pengaturan", href: "/settings", icon: "⚙️", roles: ["owner"] },
 ];
 
-// Simplified mobile bottom nav for owner (summary-focused)
 const ownerMobileNav = [
   { name: "Beranda", href: "/dashboard", icon: "📊" },
   { name: "Kandang", href: "/coops", icon: "🏠" },
@@ -35,26 +34,35 @@ const ownerMobileNav = [
   { name: "Notifikasi", href: "/notifications", icon: "🔔" },
 ];
 
-export function DashboardShell({ children, user, organization, role }: DashboardShellProps) {
+// ✨ Extract SidebarContent into a separate memoized component
+const SidebarContent = memo(function SidebarContent({ 
+  user, 
+  organization, 
+  role, 
+  filteredNav, 
+  onClose 
+}: { 
+  user: any; 
+  organization: any; 
+  role: Role; 
+  filteredNav: typeof navigation; 
+  onClose: () => void; 
+}) {
   const pathname = usePathname();
   const router = useRouter();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const filteredNav = navigation.filter((item) => item.roles.includes(role));
-  const isOwnerOrManager = role === "owner" || role === "manager";
-
-  async function handleLogout() {
+  const handleLogout = useCallback(async () => {
     await signOut();
     router.push("/login");
     router.refresh();
-  }
+  }, [router]);
 
-  const SidebarContent = () => (
+  return (
     <div className="flex h-full flex-col bg-gradient-primary-vertical text-white">
       {/* Header */}
       <div className="border-b border-white/10 px-4 py-4">
         <div className="flex items-center gap-2">
-          <img src="/icon/favicon.svg" alt="Logo" className="h-8 w-8" />
+          <img src="/icon/favicon.svg" alt="Logo" className="h-8 w-8" loading="lazy" />
           <h2 className="text-lg font-bold truncate">{organization.name}</h2>
         </div>
         <Badge variant="secondary" className="mt-1 capitalize bg-white/20 text-white border-0 hover:bg-white/30">
@@ -63,63 +71,106 @@ export function DashboardShell({ children, user, organization, role }: Dashboard
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-2 py-4">
+      <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
         {filteredNav.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              onClick={onClose}
+              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors will-change-colors ${
                 isActive
                   ? "bg-white/20 text-white shadow-sm"
                   : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
-              <span>{item.icon}</span>
-              <span>{item.name}</span>
+              <span className="text-lg flex-shrink-0">{item.icon}</span>
+              <span className="truncate">{item.name}</span>
             </Link>
           );
         })}
       </nav>
 
       {/* User info */}
-      <div className="border-t border-white/10 px-4 py-4">
+      <div className="border-t border-white/10 px-4 py-4 flex-shrink-0">
         <div className="mb-2">
           <p className="text-sm font-medium truncate text-white">{user.name}</p>
           <p className="text-xs text-white/60 truncate">{user.email}</p>
         </div>
-        <Button variant="outline" size="sm" className="w-full rounded-xl bg-white/10 border-white/20 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white" onClick={handleLogout}>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full rounded-xl bg-white/10 border-white/20 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white" 
+          onClick={handleLogout}
+        >
           Keluar
         </Button>
       </div>
     </div>
   );
+});
+
+export function DashboardShell({ children, user, organization, role }: DashboardShellProps) {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // ✨ Memoize filtered navigation
+  const filteredNav = useMemo(
+    () => navigation.filter((item) => item.roles.includes(role)),
+    [role]
+  );
+
+  const isOwnerOrManager = role === "owner" || role === "manager";
+
+  // ✨ Optimize close handler with useCallback
+  const handleMobileClose = useCallback(() => {
+    setMobileOpen(false);
+  }, []);
 
   return (
     <div className="flex h-screen flex-col md:flex-row">
       {/* Desktop Sidebar */}
-      <aside className="hidden w-64 md:block shrink-0">
-        <SidebarContent />
+      <aside className="hidden w-64 md:block shrink-0 will-change-contents">
+        <SidebarContent 
+          user={user} 
+          organization={organization} 
+          role={role} 
+          filteredNav={filteredNav}
+          onClose={() => {}}
+        />
       </aside>
 
       {/* Mobile Header (owner/manager) */}
       {isOwnerOrManager && (
-        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-white/90 backdrop-blur-sm px-4 md:hidden">
-          <div className="flex items-center gap-2">
-            <img src="/icon/favicon.svg" alt="Logo" className="h-7 w-7" />
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-white/90 backdrop-blur-sm px-4 md:hidden will-change-transform">
+          <div className="flex items-center gap-2 min-w-0">
+            <img src="/icon/favicon.svg" alt="Logo" className="h-7 w-7 flex-shrink-0" loading="lazy" />
             <span className="font-semibold text-sm truncate max-w-[140px]">{organization.name}</span>
           </div>
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <button className="p-2 rounded-lg hover:bg-muted" aria-label="Menu">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <button 
+                className="p-2 rounded-lg hover:bg-muted active:bg-muted/70 transition-colors flex-shrink-0" 
+                aria-label="Buka menu"
+                aria-expanded={mobileOpen}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-64 p-0" aria-label="Menu navigasi">
               <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
-              <SidebarContent />
+              <SidebarContent 
+                user={user} 
+                organization={organization} 
+                role={role} 
+                filteredNav={filteredNav}
+                onClose={handleMobileClose}
+              />
             </SheetContent>
           </Sheet>
         </header>
@@ -127,16 +178,30 @@ export function DashboardShell({ children, user, organization, role }: Dashboard
 
       {/* Mobile Header (non-owner) */}
       {!isOwnerOrManager && (
-        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-white/90 backdrop-blur-sm px-4 md:hidden">
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-white/90 backdrop-blur-sm px-4 md:hidden will-change-transform">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <button className="p-2 rounded-lg hover:bg-muted" aria-label="Menu">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <button 
+                className="p-2 rounded-lg hover:bg-muted active:bg-muted/70 transition-colors" 
+                aria-label="Buka menu"
+                aria-expanded={mobileOpen}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0" aria-label="Menu navigasi">
               <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
-              <SidebarContent />
+              <SidebarContent 
+                user={user} 
+                organization={organization} 
+                role={role} 
+                filteredNav={filteredNav}
+                onClose={handleMobileClose}
+              />
             </SheetContent>
           </Sheet>
           <span className="font-semibold text-sm">{organization.name}</span>
@@ -151,7 +216,7 @@ export function DashboardShell({ children, user, organization, role }: Dashboard
 
       {/* Mobile Bottom Nav (owner/manager only) */}
       {isOwnerOrManager && (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 backdrop-blur-sm safe-bottom md:hidden">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 backdrop-blur-sm safe-bottom md:hidden will-change-transform">
           <div className="flex items-center justify-around h-14">
             {ownerMobileNav.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -159,7 +224,7 @@ export function DashboardShell({ children, user, organization, role }: Dashboard
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors ${
+                  className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors will-change-colors ${
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
